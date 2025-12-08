@@ -66,7 +66,7 @@
   .control{margin-bottom:14px}
   .label{font-weight:600; margin-bottom:6px}
   .row{display:flex; gap:10px; flex-wrap:wrap}
-  input[type="number"]{
+  input[type="number"], input[type="text"]{
     flex:1 1 240px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#fff; font-size:1rem;
     -moz-appearance:textfield; appearance:textfield; /* remove steppers */
   }
@@ -123,7 +123,7 @@
         <div class="pane">
           <header>
             <h2>Your Job Inputs</h2>
-            <span class="muted">Three fields</span>
+            <span class="muted">Five fields</span>
           </header>
 
           <!-- Build type -->
@@ -141,9 +141,20 @@
             <div class="row">
               <input id="sf" type="number" min="0" step="1" value="0" inputmode="numeric" pattern="[0-9]*"
                      aria-label="Total wall area in square feet" />
-              <button class="btn primary" id="submit">Submit</button>
             </div>
             <div class="muted">Tip: include openings &amp; waste if that matches your estimating method.</div>
+          </div>
+
+          <!-- Traditional pricing inputs -->
+          <div class="control">
+            <div class="label">Current materials cost ($/SF)</div>
+            <input id="trad-mat-psf" type="number" min="0" step="0.01" value="0" inputmode="decimal" pattern="[0-9.]*"
+                   aria-label="Current materials cost per square foot" />
+          </div>
+          <div class="control">
+            <div class="label">Current labor cost ($/SF)</div>
+            <input id="trad-lab-psf" type="number" min="0" step="0.01" value="0" inputmode="decimal" pattern="[0-9.]*"
+                   aria-label="Current labor cost per square foot" />
           </div>
 
           <!-- Carry costs -->
@@ -152,6 +163,13 @@
             <input id="carry-cost" type="number" min="0" step="1000" value="0" inputmode="numeric" pattern="[0-9]*"
                    aria-label="Total project carry costs in USD" />
             <div class="muted">Carry Costs are Discounted Based on time Hydroblok saves you.</div>
+          </div>
+
+          <!-- Submit moved here: after all inputs, before Key Points -->
+          <div class="actions">
+            <button class="btn primary" id="submit">Submit</button>
+            <button class="btn" id="reset">Reset</button>
+            <button class="btn primary" id="copy">Copy quote</button>
           </div>
 
           <!-- Key Points -->
@@ -171,11 +189,6 @@
                 <li>Reduced Trash Haul Away</li>
               </ul>
             </div>
-          </div>
-
-          <div class="actions">
-            <button class="btn" id="reset">Reset</button>
-            <button class="btn primary" id="copy">Copy quote</button>
           </div>
         </div>
 
@@ -219,15 +232,12 @@
   </div><!-- /shell -->
 
 <script>
-/* Per-SF constants from your line items:
-   OLD (Traditional): Mat/SF = 5.59; Lab/SF = 4.26; Installed/SF = 9.85
-   NEW (HydroBlok):   Mat/SF = 5.43; Lab/SF = 3.95; Installed/SF = 9.38
+/* Per-SF constants for HydroBlok (keep fixed):
+   NEW (HydroBlok): Mat/SF = 5.43; Lab/SF = 3.95; Installed/SF = 9.38
 */
 const RATES = {
-  old: { mat_psf: 5.59, lab_psf: 4.26 },
   new: { mat_psf: 5.43, lab_psf: 3.95 }
 };
-RATES.old.inst_psf = RATES.old.mat_psf + RATES.old.lab_psf; // 9.85
 RATES.new.inst_psf = RATES.new.mat_psf + RATES.new.lab_psf; // 9.38
 
 function fmtUSD(x){
@@ -252,6 +262,8 @@ typeMultiBtn.addEventListener('click', ()=>{
 
 const sfEl        = document.getElementById('sf');
 const carryCostEl = document.getElementById('carry-cost');
+const tradMatPsfEl= document.getElementById('trad-mat-psf');
+const tradLabPsfEl= document.getElementById('trad-lab-psf');
 const submitBtn   = document.getElementById('submit');
 
 function renderTotals(){
@@ -261,10 +273,15 @@ function renderTotals(){
   const carryPct   = buildType === 'res' ? 0.18 : 0.15; // Residential 18%, Multi-family 15%
   const carrySav   = carryCost * carryPct;
 
+  // Traditional user-entered $/SF
+  const tradMatPsf = Math.max(0, Number(tradMatPsfEl.value || 0));
+  const tradLabPsf = Math.max(0, Number(tradLabPsfEl.value || 0));
+  const tradInstPsf= tradMatPsf + tradLabPsf;
+
   // Traditional totals
-  const oldMat = RATES.old.mat_psf * sf;
-  const oldLab = RATES.old.lab_psf * sf;
-  const oldTot = RATES.old.inst_psf * sf;
+  const oldMat = tradMatPsf * sf;
+  const oldLab = tradLabPsf * sf;
+  const oldTot = tradInstPsf * sf;
 
   // HydroBlok totals BEFORE carry savings
   const newMat = RATES.new.mat_psf * sf;
@@ -279,7 +296,7 @@ function renderTotals(){
   const pct   = oldTot > 0 ? ((oldTot - newTot) / oldTot) * 100 : 0; // % savings vs traditional
 
   // Per-SF notes
-  const oldPerSF   = (sf > 0) ? RATES.old.inst_psf : 0;
+  const oldPerSF   = (sf > 0) ? tradInstPsf : 0;
   const newPerSF   = (sf > 0) ? (newTot / sf) : 0;           // effective per-SF after carry savings
   const deltaPerSF = (sf > 0) ? ((oldTot - newTot) / sf) : 0;
 
@@ -313,6 +330,8 @@ document.getElementById('reset').addEventListener('click', ()=>{
 
   sfEl.value = 0;
   carryCostEl.value = 0;
+  tradMatPsfEl.value = 0;
+  tradLabPsfEl.value = 0;
   renderTotals();
 });
 
@@ -321,6 +340,8 @@ document.getElementById('copy').addEventListener('click', ()=>{
   const text = [
     `Build type: ${buildType === 'res' ? 'Residential' : 'Multi-family'}`,
     `Total wall area (SF): ${Math.max(0, Math.floor(Number(sfEl.value||0)))}`,
+    `Traditional materials $/SF: $${Math.max(0, Number(tradMatPsfEl.value||0)).toFixed(2)}`,
+    `Traditional labor $/SF: $${Math.max(0, Number(tradLabPsfEl.value||0)).toFixed(2)}`,
     `Total projected carry costs: ${fmtUSD(Math.max(0, Number(carryCostEl.value||0)))}`,
     `Carry cost savings applied: ${document.getElementById('carry-sav').textContent}`,
     `Traditional materials: ${document.getElementById('old-mat').textContent}`,
