@@ -218,6 +218,12 @@
             <div class="row2"><span>HydroBlok materials</span><strong id="new-mat">$0.00</strong></div>
             <div class="row2"><span>HydroBlok labor</span><strong id="new-lab">$0.00</strong></div>
             <div class="row2"><span>Carry cost savings applied</span><strong id="carry-sav">$0.00 (18%)</strong></div>
+            <div style="margin-top:8px; border-top:1px dashed var(--border); padding-top:8px">
+              <div style="font-weight:700; margin-bottom:6px">HydroBlok Material Breakdown (per-item)</div>
+              <div id="hydro-items" style="font-size:0.95rem">
+                <!-- populated by script: each row will show name, mat $/SF, lab $/SF, total mat, total lab -->
+              </div>
+            </div>
             <div class="row2" style="border-top:1px solid var(--border); padding-top:8px">
               <span>Savings vs traditional</span>
               <div style="display:flex;flex-direction:column;align-items:flex-end">
@@ -287,6 +293,42 @@ function renderTotals(){
   const newMat = RATES.new.mat_psf * sf;
   const newLab = RATES.new.lab_psf * sf;
   const newTotBase = RATES.new.inst_psf * sf;
+
+  // Per-item HydroBlok material list (mat $/SF, lab $/SF)
+  const HYDRO_ITEMS = [
+    { name: 'Tyvek WRB', mat: 0.18, lab: 0.25 },
+    { name: 'Backer CI (R-5)', mat: 2.69, lab: 0.50 },
+    { name: 'Fasteners — 2.5" Screws', mat: 0.17, lab: 0.15 },
+    { name: 'Washer — Wing', mat: 0.15, lab: 0.10 },
+    { name: 'Metal Trim — J‑Mold, Weep, corner', mat: 0.75, lab: 0.25 },
+    { name: 'Bldg Prep — Tape/Film', mat: 0.35, lab: 0.20 },
+    { name: 'HB Base', mat: 0.33, lab: 1.00 },
+    { name: 'Stucco Mesh — ASTM-2098', mat: 0.19, lab: 0.15 },
+    { name: 'Acrylic Finish', mat: 0.58, lab: 1.00 },
+    { name: 'Mobilization', mat: 0.03, lab: 0.05 },
+    { name: 'Scaffolding', mat: 0.00, lab: 0.25 },
+    { name: 'Cleanup', mat: 0.03, lab: 0.05 }
+  ];
+
+  // Compute per-item totals and render into the hydro-items container
+  const hydroItemsEl = document.getElementById('hydro-items');
+  if (hydroItemsEl) {
+    const rows = HYDRO_ITEMS.map(item => {
+      const mat_psf = Number(item.mat) || 0;
+      const lab_psf = Number(item.lab) || 0;
+      const mat_total = mat_psf * sf;
+      const lab_total = lab_psf * sf;
+      return `
+        <div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed rgba(0,0,0,0.04)">
+          <div style="flex:1 1 40%;font-weight:600">${item.name}</div>
+          <div style="flex:0 0 14%;text-align:right;color:var(--muted)">Mat: ${fmtUSD(mat_psf)}/SF</div>
+          <div style="flex:0 0 14%;text-align:right;color:var(--muted)">Lab: ${fmtUSD(lab_psf)}/SF</div>
+          <div style="flex:0 0 18%;text-align:right">Mat total: ${fmtUSD(mat_total)}</div>
+          <div style="flex:0 0 18%;text-align:right">Lab total: ${fmtUSD(lab_total)}</div>
+        </div>`;
+    });
+    hydroItemsEl.innerHTML = rows.join('\n');
+  }
 
   // Apply carry savings to HydroBlok
   const newTot = Math.max(0, newTotBase - carrySav);
