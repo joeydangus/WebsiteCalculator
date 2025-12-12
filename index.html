@@ -182,7 +182,7 @@
 
           <!-- Itemized inputs (hidden by default) -->
           <div id="itemized-section" style="display:none;">
-            <div class="control"><div class="label">Itemized inputs (Material $/SF / Labor $/SF)</div></div>
+            <div class="control"><div class="label">Current Itemized Costs (Material $/SF / Labor $/SF)</div></div>
             <div class="control">
               <div class="row">
                 <div style="flex:1">
@@ -380,11 +380,14 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Download CSV and Submit Buttons -->
           <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
             <button class="btn primary" id="create-pdf">Export Quote</button>
             <button class="btn primary" id="submit-right">Calculate & Submit</button>
+          </div>
+          <div style="margin-top:10px">
+            <span class="muted">Quote susceptible to change based on individual project requirements</span>
           </div>
         </div>
       </div><!-- /grid -->
@@ -631,6 +634,9 @@ document.getElementById('create-pdf').addEventListener('click', function(){
     
     ws_data.push(['HydroBlok Quote - ' + sf + ' SF']);
     boldRows.push(0);
+    // Disclaimer in sheet at D1
+    ws_data[0] = ws_data[0] || [];
+    ws_data[0][3] = 'Quote susceptible to change based on individual project requirements';
     
     ws_data.push([]);
     ws_data.push(['QUOTE INFORMATION']);
@@ -783,3 +789,4 @@ renderTotals();
 </script>
 </body>
 </html>
+
