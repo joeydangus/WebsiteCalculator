@@ -634,6 +634,9 @@ document.getElementById('create-pdf').addEventListener('click', function(){
     
     ws_data.push(['HydroBlok Quote - ' + sf + ' SF']);
     boldRows.push(0);
+    // Disclaimer in sheet at D1
+    ws_data[0] = ws_data[0] || [];
+    ws_data[0][3] = 'Quote susceptible to change based on individual project requirements';
     
     ws_data.push([]);
     ws_data.push(['QUOTE INFORMATION']);
