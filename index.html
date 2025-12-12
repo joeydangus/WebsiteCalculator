@@ -383,7 +383,7 @@
 
           <!-- Download CSV and Submit Buttons -->
           <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <button class="btn primary" id="create-pdf">Export Quote</button>
+            <button class="btn primary" id="create-pdf">Export .XSLX quote</button>
             <button class="btn primary" id="submit-right">Calculate & Submit</button>
           </div>
           <div style="margin-top:10px">
@@ -603,7 +603,7 @@ document.getElementById('create-pdf').addEventListener('click', function(){
     
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    const quoteNum = 'QB-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '-' + Math.floor(Math.random()*1000).toString().padStart(3,'0');
+    const quoteNum = 'QB-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
     
     // Collect itemized data if in itemized mode — include all itemized inputs (show all 11 rows)
     let itemizedRows = [['ITEMIZED MATERIALS & LABOR'], ['Item', 'Mat $/SF', 'Lab $/SF']];
@@ -628,6 +628,12 @@ document.getElementById('create-pdf').addEventListener('click', function(){
       }
     }
     
+    // Prevent exporting if both totals are zero
+    if ((oldTot === 0 || oldTot === 0.0) && (newTot === 0 || newTot === 0.0)) {
+      alert('Cannot export: quote totals are zero. Enter inputs and calculate before exporting.');
+      return;
+    }
+
     // Create workbook data
     const ws_data = [];
     const boldRows = [];
@@ -776,7 +782,9 @@ document.getElementById('create-pdf').addEventListener('click', function(){
     
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Quote');
-    XLSX.writeFile(wb, 'HydroBlok-Quote-' + quoteNum + '.xlsx');
+    const sfStr = Number.isInteger(sf) ? String(sf) : String(sf).replace('.', '_');
+    const filename = 'HydroBlok-Quote-' + sfStr + 'SF-' + quoteNum + '.xlsx';
+    XLSX.writeFile(wb, filename);
     
   } catch(e) {
     console.error('Export error:', e);
