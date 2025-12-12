@@ -5,6 +5,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Instant Quote Calculator</title>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   /* Brand font: Aeonik Medium (update URL to your hosted file) */
   @font-face {
@@ -74,6 +76,9 @@
   input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
   input:focus{outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(80,158,46,.18)}
 
+  /* faint placeholder for itemized Mat/Lab inputs */
+  .item-mat::placeholder, .item-lab::placeholder { color: rgba(15,23,42,0.35); }
+
   .seg{display:flex; background:#f8fafc; border:1px solid var(--border); border-radius:999px; padding:4px}
   .seg button{
     flex:1; border:0; background:transparent; padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600; color:var(--text);
@@ -126,6 +131,14 @@
             <span class="muted">Five fields</span>
           </header>
 
+          <!-- Mode: Quick vs Itemized -->
+          <div class="control">
+            <div class="label">Quote Mode</div>
+            <div class="seg" role="tablist" aria-label="Quote mode">
+              <button id="mode-quick" class="active" role="tab" aria-selected="true">Quick Quote</button>
+              <button id="mode-itemized" role="tab" aria-selected="false">Itemized Quote</button>
+            </div>
+          </div>
           <!-- Build type -->
           <div class="control">
             <div class="label">Build type</div>
@@ -139,37 +152,178 @@
           <div class="control">
             <div class="label">Total wall area (SF)</div>
             <div class="row">
-              <input id="sf" type="number" min="0" step="1" value="0" inputmode="numeric" pattern="[0-9]*"
+              <input id="sf" type="number" min="0" step="0.00001" value="0" inputmode="numeric" pattern="[0-9.]*"
                      aria-label="Total wall area in square feet" />
             </div>
             <div class="muted">Tip: include openings &amp; waste if that matches your estimating method.</div>
           </div>
 
-          <!-- Traditional pricing inputs -->
-          <div class="control">
-            <div class="label">Current materials cost ($/SF)</div>
-            <input id="trad-mat-psf" type="number" min="0" step="0.01" value="0" inputmode="decimal" pattern="[0-9.]*"
-                   aria-label="Current materials cost per square foot" />
-          </div>
-          <div class="control">
-            <div class="label">Current labor cost ($/SF)</div>
-            <input id="trad-lab-psf" type="number" min="0" step="0.01" value="0" inputmode="decimal" pattern="[0-9.]*"
-                   aria-label="Current labor cost per square foot" />
-          </div>
-
-          <!-- Carry costs -->
+          <!-- Carry costs (moved so it appears before Quick/Itemized inputs) -->
           <div class="control">
             <div class="label">Total projected carry costs (USD)</div>
-            <input id="carry-cost" type="number" min="0" step="1000" value="0" inputmode="numeric" pattern="[0-9]*"
+                 <input id="carry-cost" type="number" min="0" step="0.00001" value="0" inputmode="numeric" pattern="[0-9.]*"
                    aria-label="Total project carry costs in USD" />
             <div class="muted">Carry Costs are Discounted Based on time Hydroblok saves you.</div>
           </div>
+
+          <!-- Quick inputs (existing) -->
+          <div id="quick-section">
+            <div class="control">
+              <div class="label">Current materials cost ($/SF)</div>
+              <input id="trad-mat-psf" type="number" min="0" step="0.00001" value="0" inputmode="decimal" pattern="[0-9.]*"
+                     aria-label="Current materials cost per square foot" />
+            </div>
+            <div class="control">
+              <div class="label">Current labor cost ($/SF)</div>
+              <input id="trad-lab-psf" type="number" min="0" step="0.00001" value="0" inputmode="decimal" pattern="[0-9.]*"
+                     aria-label="Current labor cost per square foot" />
+            </div>
+          </div>
+
+          <!-- Itemized inputs (hidden by default) -->
+          <div id="itemized-section" style="display:none;">
+            <div class="control"><div class="label">Current Itemized Costs (Material $/SF / Labor $/SF)</div></div>
+            <div class="control">
+              <div class="row">
+                <div style="flex:1">
+                  <label class="label">WRB</label>
+                  <input class="item-mat" data-item="wrb" id="mat-wrb" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                </div>
+                <div style="flex:1">
+                  <label class="label">&nbsp;</label>
+                  <input class="item-lab" data-item="wrb" id="lab-wrb" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+                </div>
+              </div>
+            </div>
+            <div class="control">
+              <div class="row">
+                <div style="flex:1">
+                  <label class="label">EPS Foam</label>
+                  <input class="item-mat" data-item="eps" id="mat-eps" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                </div>
+                <div style="flex:1">
+                  <label class="label">&nbsp;</label>
+                  <input class="item-lab" data-item="eps" id="lab-eps" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+                </div>
+              </div>
+            </div>
+            <div class="control">
+              <div class="row">
+                <div style="flex:1">
+                  <label class="label">Metal Wire</label>
+                  <input class="item-mat" data-item="wire" id="mat-wire" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                </div>
+                <div style="flex:1">
+                  <label class="label">&nbsp;</label>
+                  <input class="item-lab" data-item="wire" id="lab-wire" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+                </div>
+              </div>
+            </div>
+            <div class="control">
+              <div class="row">
+                <div style="flex:1">
+                  <label class="label">Fasteners</label>
+                  <input class="item-mat" data-item="fasteners" id="mat-fasteners" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                </div>
+                <div style="flex:1">
+                  <label class="label">&nbsp;</label>
+                  <input class="item-lab" data-item="fasteners" id="lab-fasteners" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+                </div>
+              </div>
+            </div>
+            <div class="control">
+              <div class="row">
+                <div style="flex:1">
+                  <label class="label">Metal Trim</label>
+                  <input class="item-mat" data-item="trim" id="mat-trim" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                </div>
+                <div style="flex:1">
+                  <label class="label">&nbsp;</label>
+                  <input class="item-lab" data-item="trim" id="lab-trim" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+                </div>
+              </div>
+            </div>
+            <div class="control">
+              <div class="row">
+                <div style="flex:1">
+                  <label class="label">Bldg Prep</label>
+                  <input class="item-mat" data-item="prep" id="mat-prep" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                </div>
+                <div style="flex:1">
+                  <label class="label">&nbsp;</label>
+                  <input class="item-lab" data-item="prep" id="lab-prep" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+                </div>
+              </div>
+            </div>
+            <div class="control">
+              <div class="row">
+                <div style="flex:1">
+                  <label class="label">Base Coat</label>
+                  <input class="item-mat" data-item="base" id="mat-base" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                </div>
+                <div style="flex:1">
+                  <label class="label">&nbsp;</label>
+                  <input class="item-lab" data-item="base" id="lab-base" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+                </div>
+              </div>
+            </div>
+            <div class="control">
+              <div class="row">
+                <div style="flex:1">
+                  <label class="label">Finish Coat</label>
+                  <input class="item-mat" data-item="finish" id="mat-finish" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                </div>
+                <div style="flex:1">
+                  <label class="label">&nbsp;</label>
+                  <input class="item-lab" data-item="finish" id="lab-finish" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+                </div>
+              </div>
+            </div>
+            <div class="control">
+              <div class="row">
+                <div style="flex:1">
+                  <label class="label">Mobilization</label>
+                  <input class="item-mat" data-item="mobil" id="mat-mobil" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                </div>
+                <div style="flex:1">
+                  <label class="label">&nbsp;</label>
+                  <input class="item-lab" data-item="mobil" id="lab-mobil" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+                </div>
+              </div>
+            </div>
+            <div class="control">
+              <div class="row">
+                <div style="flex:1">
+                  <label class="label">Scaffolding</label>
+                  <input class="item-mat" data-item="scaf" id="mat-scaf" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                </div>
+                <div style="flex:1">
+                  <label class="label">&nbsp;</label>
+                  <input class="item-lab" data-item="scaf" id="lab-scaf" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+                </div>
+              </div>
+            </div>
+            <div class="control">
+              <div class="row">
+                <div style="flex:1">
+                  <label class="label">Cleanup</label>
+                  <input class="item-mat" data-item="cleanup" id="mat-cleanup" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                </div>
+                <div style="flex:1">
+                  <label class="label">&nbsp;</label>
+                  <input class="item-lab" data-item="cleanup" id="lab-cleanup" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Carry costs (moved above quick/itemized sections) -->
+          <!-- (removed from here; placed earlier after Wall area) -->
 
           <!-- Submit moved here: after all inputs, before Key Points -->
           <div class="actions">
             <button class="btn primary" id="submit">Submit</button>
             <button class="btn" id="reset">Reset</button>
-            <button class="btn primary" id="copy">Copy quote</button>
           </div>
 
           <!-- Key Points -->
@@ -177,15 +331,14 @@
             <h3>Key Points</h3>
             <div class="kvp-cols">
               <ul>
-                <li>Cost of Money / Interest Savings</li>
+                <li>Better resale value over time</li>
                 <li>Builders Insurance Savings</li>
                 <li>Carry Insurance Savings</li>
                 <li>Shorter Curing Times Between Coats</li>
               </ul>
               <ul>
                 <li>No Lath Inspections</li>
-                <li>De‑risk labor inflation costs</li>
-                <li>Better resale value over time</li>
+                <li>De-risk labor inflation costs</li>
                 <li>Reduced Trash Haul Away</li>
               </ul>
             </div>
@@ -217,13 +370,8 @@
             <div class="row2"><span>Traditional labor</span><strong id="old-lab">$0.00</strong></div>
             <div class="row2"><span>HydroBlok materials</span><strong id="new-mat">$0.00</strong></div>
             <div class="row2"><span>HydroBlok labor</span><strong id="new-lab">$0.00</strong></div>
-            <div class="row2"><span>Carry cost savings applied</span><strong id="carry-sav">$0.00 (18%)</strong></div>
-            <div style="margin-top:8px; border-top:1px dashed var(--border); padding-top:8px">
-              <div style="font-weight:700; margin-bottom:6px">HydroBlok Material Breakdown (per-item)</div>
-              <div id="hydro-items" style="font-size:0.95rem">
-                <!-- populated by script: each row will show name, mat $/SF, lab $/SF, total mat, total lab -->
-              </div>
-            </div>
+            <div class="row2"><span>Hydroblok Carry cost</span><strong id="carry-sav">$0.00 (18%)</strong></div>
+            <!-- per-item HydroBlok breakdown removed; totals remain above -->
             <div class="row2" style="border-top:1px solid var(--border); padding-top:8px">
               <span>Savings vs traditional</span>
               <div style="display:flex;flex-direction:column;align-items:flex-end">
@@ -231,6 +379,12 @@
                 <span class="psf" id="delta-psf">$0.00/SF</span>
               </div>
             </div>
+          </div>
+          
+          <!-- Download CSV and Submit Buttons -->
+          <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <button class="btn primary" id="create-pdf">Export Quote</button>
+            <button class="btn primary" id="submit-right">Calculate & Submit</button>
           </div>
         </div>
       </div><!-- /grid -->
@@ -271,76 +425,101 @@ const carryCostEl = document.getElementById('carry-cost');
 const tradMatPsfEl= document.getElementById('trad-mat-psf');
 const tradLabPsfEl= document.getElementById('trad-lab-psf');
 const submitBtn   = document.getElementById('submit');
+// Mode elements
+const modeQuickBtn = document.getElementById('mode-quick');
+const modeItemBtn  = document.getElementById('mode-itemized');
+const quickSection = document.getElementById('quick-section');
+const itemizedSection = document.getElementById('itemized-section');
+let quoteMode = 'quick'; // 'quick' | 'itemized'
+
+// Mode toggle handlers
+modeQuickBtn.addEventListener('click', () => {
+  quoteMode = 'quick';
+  modeQuickBtn.classList.add('active'); modeQuickBtn.setAttribute('aria-selected','true');
+  modeItemBtn.classList.remove('active'); modeItemBtn.setAttribute('aria-selected','false');
+  quickSection.style.display = '';
+  itemizedSection.style.display = 'none';
+});
+modeItemBtn.addEventListener('click', () => {
+  quoteMode = 'itemized';
+  modeItemBtn.classList.add('active'); modeItemBtn.setAttribute('aria-selected','true');
+  modeQuickBtn.classList.remove('active'); modeQuickBtn.setAttribute('aria-selected','false');
+  quickSection.style.display = 'none';
+  itemizedSection.style.display = '';
+});
 
 function renderTotals(){
   // Read inputs and respect true zero
-  const sf         = Math.max(0, Math.floor(Number(sfEl.value || 0)));
-  const carryCost  = Math.max(0, Number(carryCostEl.value || 0));
+  let sf = Number(sfEl.value || 0);
+  if (isNaN(sf) || sf < 0) sf = 0;
+  
+  let carryCost = Number(carryCostEl.value || 0);
+  if (isNaN(carryCost) || carryCost < 0) carryCost = 0;
+  
   const carryPct   = buildType === 'res' ? 0.18 : 0.15; // Residential 18%, Multi-family 15%
   const carrySav   = carryCost * carryPct;
 
-  // Traditional user-entered $/SF
-  const tradMatPsf = Math.max(0, Number(tradMatPsfEl.value || 0));
-  const tradLabPsf = Math.max(0, Number(tradLabPsfEl.value || 0));
+  // Temporary debug logging
+  console.log('DEBUG renderTotals:', { sf, carryCost, carryPct, buildType, quoteMode });
+
+  // Traditional user-entered $/SF — source depends on mode
+  let tradMatPsf = 0, tradLabPsf = 0;
+  if (quoteMode === 'quick'){
+    tradMatPsf = Number(tradMatPsfEl.value || 0);
+    if (isNaN(tradMatPsf) || tradMatPsf < 0) tradMatPsf = 0;
+    
+    tradLabPsf = Number(tradLabPsfEl.value || 0);
+    if (isNaN(tradLabPsf) || tradLabPsf < 0) tradLabPsf = 0;
+  } else {
+    // Sum itemized fields (each input is $/SF)
+    const matEls = document.querySelectorAll('.item-mat');
+    const labEls = document.querySelectorAll('.item-lab');
+    tradMatPsf = Array.from(matEls).reduce((s, e) => {
+      let val = Number(e.value || 0);
+      return s + (isNaN(val) || val < 0 ? 0 : val);
+    }, 0);
+    tradLabPsf = Array.from(labEls).reduce((s, e) => {
+      let val = Number(e.value || 0);
+      return s + (isNaN(val) || val < 0 ? 0 : val);
+    }, 0);
+  }
   const tradInstPsf= tradMatPsf + tradLabPsf;
 
-  // Traditional totals
+  console.log('DEBUG traditional $/SF:', { tradMatPsf, tradLabPsf, tradInstPsf });
+
+  // Traditional totals (material + labor)
   const oldMat = tradMatPsf * sf;
   const oldLab = tradLabPsf * sf;
-  const oldTot = tradInstPsf * sf;
+  const oldTotBase = tradInstPsf * sf;
+  
+  // Add full carry cost to traditional total
+  const oldTot = oldTotBase + carryCost;
 
-  // HydroBlok totals BEFORE carry savings
+  // HydroBlok totals (material + labor)
   const newMat = RATES.new.mat_psf * sf;
   const newLab = RATES.new.lab_psf * sf;
   const newTotBase = RATES.new.inst_psf * sf;
 
-  // Per-item HydroBlok material list (mat $/SF, lab $/SF)
-  const HYDRO_ITEMS = [
-    { name: 'Tyvek WRB', mat: 0.18, lab: 0.25 },
-    { name: 'Backer CI (R-5)', mat: 2.69, lab: 0.50 },
-    { name: 'Fasteners — 2.5" Screws', mat: 0.17, lab: 0.15 },
-    { name: 'Washer — Wing', mat: 0.15, lab: 0.10 },
-    { name: 'Metal Trim — J‑Mold, Weep, corner', mat: 0.75, lab: 0.25 },
-    { name: 'Bldg Prep — Tape/Film', mat: 0.35, lab: 0.20 },
-    { name: 'HB Base', mat: 0.33, lab: 1.00 },
-    { name: 'Stucco Mesh — ASTM-2098', mat: 0.19, lab: 0.15 },
-    { name: 'Acrylic Finish', mat: 0.58, lab: 1.00 },
-    { name: 'Mobilization', mat: 0.03, lab: 0.05 },
-    { name: 'Scaffolding', mat: 0.00, lab: 0.25 },
-    { name: 'Cleanup', mat: 0.03, lab: 0.05 }
-  ];
+  console.log('DEBUG totals before carry:', { oldTotBase, newTotBase, carryCost, carryPct });
 
-  // Compute per-item totals and render into the hydro-items container
-  const hydroItemsEl = document.getElementById('hydro-items');
-  if (hydroItemsEl) {
-    const rows = HYDRO_ITEMS.map(item => {
-      const mat_psf = Number(item.mat) || 0;
-      const lab_psf = Number(item.lab) || 0;
-      const mat_total = mat_psf * sf;
-      const lab_total = lab_psf * sf;
-      return `
-        <div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed rgba(0,0,0,0.04)">
-          <div style="flex:1 1 40%;font-weight:600">${item.name}</div>
-          <div style="flex:0 0 14%;text-align:right;color:var(--muted)">Mat: ${fmtUSD(mat_psf)}/SF</div>
-          <div style="flex:0 0 14%;text-align:right;color:var(--muted)">Lab: ${fmtUSD(lab_psf)}/SF</div>
-          <div style="flex:0 0 18%;text-align:right">Mat total: ${fmtUSD(mat_total)}</div>
-          <div style="flex:0 0 18%;text-align:right">Lab total: ${fmtUSD(lab_total)}</div>
-        </div>`;
-    });
-    hydroItemsEl.innerHTML = rows.join('\n');
-  }
+  // Per-item breakdown removed — display only aggregate HydroBlok totals
 
-  // Apply carry savings to HydroBlok
-  const newTot = Math.max(0, newTotBase - carrySav);
+  // Add discounted carry cost to HydroBlok (cost minus the savings percentage)
+  const carryDiscountedForHydro = carryCost * (1 - carryPct);
+  const newTot = newTotBase + carryDiscountedForHydro;
 
   // Comparison
   const delta = Math.max(0, oldTot - newTot);
   const pct   = oldTot > 0 ? ((oldTot - newTot) / oldTot) * 100 : 0; // % savings vs traditional
 
+  console.log('DEBUG final totals:', { oldTot, newTot, carryDiscountedForHydro, delta, pct });
+
   // Per-SF notes
-  const oldPerSF   = (sf > 0) ? tradInstPsf : 0;
-  const newPerSF   = (sf > 0) ? (newTot / sf) : 0;           // effective per-SF after carry savings
+  const oldPerSF   = (sf > 0) ? (oldTot / sf) : 0;
+  const newPerSF   = (sf > 0) ? (newTot / sf) : 0;           // effective per-SF with carry cost applied
   const deltaPerSF = (sf > 0) ? ((oldTot - newTot) / sf) : 0;
+
+  console.log('DEBUG per-SF:', { oldPerSF, newPerSF, deltaPerSF });
 
   // Render totals
   document.getElementById('old-total').textContent = fmtUSD(oldTot);
@@ -349,7 +528,7 @@ function renderTotals(){
   document.getElementById('old-lab').textContent   = fmtUSD(oldLab);
   document.getElementById('new-mat').textContent   = fmtUSD(newMat);
   document.getElementById('new-lab').textContent   = fmtUSD(newLab);
-  document.getElementById('carry-sav').textContent = `${fmtUSD(carrySav)} (${(carryPct*100).toFixed(0)}%)`;
+  document.getElementById('carry-sav').textContent = `${fmtUSD(carryDiscountedForHydro)} (discounted ${(carryPct*100).toFixed(0)}%)`;
   document.getElementById('delta').textContent     = fmtUSD(delta);
   document.getElementById('pct').textContent       = `${pct.toFixed(1)}% savings`;
 
@@ -359,8 +538,13 @@ function renderTotals(){
   document.getElementById('delta-psf').textContent = `${fmtUSD(deltaPerSF)}/SF`;
 }
 
-// Submit only triggers calculation
+// Submit button triggers calculation
 submitBtn.addEventListener('click', () => {
+  renderTotals();
+});
+
+// Submit button on right (same function)
+document.getElementById('submit-right').addEventListener('click', () => {
   renderTotals();
 });
 
@@ -374,28 +558,224 @@ document.getElementById('reset').addEventListener('click', ()=>{
   carryCostEl.value = 0;
   tradMatPsfEl.value = 0;
   tradLabPsfEl.value = 0;
+  // clear itemized inputs as well (clear so placeholders show)
+  document.querySelectorAll('.item-mat, .item-lab').forEach(i => i.value = '');
   renderTotals();
 });
 
-// Copy quote — breakdown + totals only (includes per-SF notes)
-document.getElementById('copy').addEventListener('click', ()=>{
-  const text = [
-    `Build type: ${buildType === 'res' ? 'Residential' : 'Multi-family'}`,
-    `Total wall area (SF): ${Math.max(0, Math.floor(Number(sfEl.value||0)))}`,
-    `Traditional materials $/SF: $${Math.max(0, Number(tradMatPsfEl.value||0)).toFixed(2)}`,
-    `Traditional labor $/SF: $${Math.max(0, Number(tradLabPsfEl.value||0)).toFixed(2)}`,
-    `Total projected carry costs: ${fmtUSD(Math.max(0, Number(carryCostEl.value||0)))}`,
-    `Carry cost savings applied: ${document.getElementById('carry-sav').textContent}`,
-    `Traditional materials: ${document.getElementById('old-mat').textContent}`,
-    `Traditional labor: ${document.getElementById('old-lab').textContent}`,
-    `Traditional total: ${document.getElementById('old-total').textContent} (${document.getElementById('old-psf').textContent})`,
-    `HydroBlok materials: ${document.getElementById('new-mat').textContent}`,
-    `HydroBlok labor: ${document.getElementById('new-lab').textContent}`,
-    `HydroBlok total: ${document.getElementById('new-total').textContent} (${document.getElementById('new-psf').textContent})`,
-    `Savings vs traditional: ${document.getElementById('delta').textContent} (${document.getElementById('delta-psf').textContent})`,
-    `Percent savings: ${document.getElementById('pct').textContent}`
-  ].join('\n');
-  navigator.clipboard?.writeText(text).then(()=>alert('Quote copied to clipboard!')).catch(()=>window.prompt('Copy this:', text));
+// Generate Excel Quote
+document.getElementById('create-pdf').addEventListener('click', function(){
+  try {
+    const sf = Math.max(0, Number(sfEl.value || 0));
+    const carryCost = Math.max(0, Number(carryCostEl.value || 0));
+    const carryPct = buildType === 'res' ? 0.18 : 0.15;
+    
+    let tradMatPsf = 0, tradLabPsf = 0;
+    if (quoteMode === 'quick'){
+      tradMatPsf = Math.max(0, Number(tradMatPsfEl.value || 0));
+      tradLabPsf = Math.max(0, Number(tradLabPsfEl.value || 0));
+    } else {
+      const matEls = document.querySelectorAll('.item-mat');
+      const labEls = document.querySelectorAll('.item-lab');
+      tradMatPsf = Array.from(matEls).reduce((s, e) => { let val = Number(e.value || 0); return s + (isNaN(val) || val < 0 ? 0 : val); }, 0);
+      tradLabPsf = Array.from(labEls).reduce((s, e) => { let val = Number(e.value || 0); return s + (isNaN(val) || val < 0 ? 0 : val); }, 0);
+    }
+    
+    const oldMat = tradMatPsf * sf;
+    const oldLab = tradLabPsf * sf;
+    const oldTotBase = (tradMatPsf + tradLabPsf) * sf;
+    const oldTot = oldTotBase + carryCost;
+    
+    const newMat = RATES.new.mat_psf * sf;
+    const newLab = RATES.new.lab_psf * sf;
+    const newTotBase = RATES.new.inst_psf * sf;
+    const carryDiscountedForHydro = carryCost * (1 - carryPct);
+    const newTot = newTotBase + carryDiscountedForHydro;
+    
+    const delta = Math.max(0, oldTot - newTot);
+    const pct = oldTot > 0 ? ((oldTot - newTot) / oldTot) * 100 : 0;
+    
+    const perSFTrad = oldTot / (sf > 0 ? sf : 1);
+    const perSFHydro = newTot / (sf > 0 ? sf : 1);
+    
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const quoteNum = 'QB-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0') + '-' + Math.floor(Math.random()*1000).toString().padStart(3,'0');
+    
+    // Collect itemized data if in itemized mode — include all itemized inputs (show all 11 rows)
+    let itemizedRows = [['ITEMIZED MATERIALS & LABOR'], ['Item', 'Mat $/SF', 'Lab $/SF']];
+    if (quoteMode === 'itemized') {
+      const matEls = document.querySelectorAll('.item-mat');
+      const labEls = document.querySelectorAll('.item-lab');
+      for (let i = 0; i < matEls.length; i++) {
+        const matInput = matEls[i];
+        const labInput = labEls[i];
+        // find the label text near the input (same container)
+        let name = '';
+        try {
+          const lbl = matInput.parentElement.querySelector('.label');
+          name = lbl ? String(lbl.textContent || '').trim() : ('Item ' + (i+1));
+        } catch (e) {
+          name = 'Item ' + (i+1);
+        }
+        const mat = Number(matInput.value || 0);
+        const lab = Number((labInput && labInput.value) || 0);
+        // push every row (do not filter) so the exported sheet always contains all items
+        itemizedRows.push([name, mat, lab]);
+      }
+    }
+    
+    // Create workbook data
+    const ws_data = [];
+    const boldRows = [];
+    
+    ws_data.push(['HydroBlok Quote - ' + sf + ' SF']);
+    boldRows.push(0);
+    
+    ws_data.push([]);
+    ws_data.push(['QUOTE INFORMATION']);
+    boldRows.push(2);
+    ws_data.push(['Quote Number', quoteNum]);
+    ws_data.push(['Date', dateStr]);
+    ws_data.push(['Build Type', buildType === 'res' ? 'Residential' : 'Multi-family']);
+    ws_data.push(['Quote Mode', quoteMode === 'quick' ? 'Quick Quote' : 'Itemized Quote']);
+    
+    ws_data.push([]);
+    ws_data.push(['JOB DETAILS']);
+    boldRows.push(8);
+    ws_data.push(['Total Wall Area (SF)', sf]);
+    ws_data.push(['Projected Carry Costs', carryCost]);
+    ws_data.push(['Carry Cost Discount Rate', (carryPct*100).toFixed(0) + '%']);
+    
+    ws_data.push([]);
+    ws_data.push(['TRADITIONAL METHOD PRICING']);
+    boldRows.push(13);
+    ws_data.push(['Materials per SF', tradMatPsf]);
+    ws_data.push(['Labor per SF', tradLabPsf]);
+    ws_data.push(['Total Cost per SF', tradMatPsf + tradLabPsf]);
+    ws_data.push(['Materials Total (' + sf + ' SF)', oldMat]);
+    ws_data.push(['Labor Total (' + sf + ' SF)', oldLab]);
+    ws_data.push(['Installation Base Cost', oldTotBase]);
+    ws_data.push(['Carry Costs', carryCost]);
+    ws_data.push(['TRADITIONAL TOTAL', oldTot]);
+    boldRows.push(20);
+    ws_data.push(['Traditional Cost per SF', perSFTrad]);
+    
+    ws_data.push([]);
+    ws_data.push(['HYDROBLOK PRICING']);
+    boldRows.push(23);
+    ws_data.push(['Materials per SF', RATES.new.mat_psf]);
+    ws_data.push(['Labor per SF', RATES.new.lab_psf]);
+    ws_data.push(['Total Cost per SF', RATES.new.inst_psf]);
+    ws_data.push(['Materials Total (' + sf + ' SF)', newMat]);
+    ws_data.push(['Labor Total (' + sf + ' SF)', newLab]);
+    ws_data.push(['Installation Base Cost', newTotBase]);
+    ws_data.push(['Carry Costs (Discounted ' + (carryPct*100).toFixed(0) + '%)', carryDiscountedForHydro]);
+    ws_data.push(['HYDROBLOK TOTAL', newTot]);
+    boldRows.push(31);
+    ws_data.push(['HydroBlok Cost per SF', perSFHydro]);
+    
+    ws_data.push([]);
+    ws_data.push(['COST COMPARISON']);
+    boldRows.push(34);
+    ws_data.push(['Traditional Total Cost', oldTot]);
+    ws_data.push(['HydroBlok Total Cost', newTot]);
+    ws_data.push(['TOTAL SAVINGS', delta]);
+    boldRows.push(37);
+    ws_data.push(['Savings Percentage', pct.toFixed(1) + '%']);
+    
+    ws_data.push([]);
+    ws_data.push(['ADVANTAGES']);
+    boldRows.push(40);
+    ws_data.push(['Better resale value over time']);
+    ws_data.push(['Builders insurance savings']);
+    ws_data.push(['No lath inspections required']);
+    ws_data.push(['De-risk labor inflation costs']);
+    ws_data.push(['Shorter curing times between coats']);
+    ws_data.push(['Reduced trash haul away and project costs']);
+    ws_data.push(['Improved durability and weather resistance']);
+    
+    // Add itemized data to the right if in itemized mode
+    if (quoteMode === 'itemized' && itemizedRows.length > 1) {
+      // locate a target header row for the right-side table (search by first column or create one)
+      let rightHeaderIdx = ws_data.findIndex(r => r && r[3] && String(r[3]).toString().startsWith('Itemized'));
+      if (rightHeaderIdx === -1) {
+        // place right table after QUOTE INFORMATION block if present, otherwise after a sensible index
+        const quoteInfoIdx = ws_data.findIndex(r => r && r[0] && String(r[0]).startsWith('QUOTE INFORMATION'));
+        rightHeaderIdx = (quoteInfoIdx === -1) ? 8 : quoteInfoIdx + 2;
+        ws_data[rightHeaderIdx] = ws_data[rightHeaderIdx] || [];
+        ws_data[rightHeaderIdx][3] = 'Itemized';
+        ws_data[rightHeaderIdx + 1] = ws_data[rightHeaderIdx + 1] || [];
+        ws_data[rightHeaderIdx + 1][3] = 'Line Item';
+        ws_data[rightHeaderIdx + 1][4] = 'Mat $/SF';
+        ws_data[rightHeaderIdx + 1][5] = 'Lab $/SF';
+        // mark header rows for bolding
+        boldRows.push(rightHeaderIdx, rightHeaderIdx + 1);
+      }
+
+      // write item rows starting two rows after our header
+      let writeIdx = rightHeaderIdx + 2;
+      for (let i = 2; i < itemizedRows.length; i++) {
+        const row = itemizedRows[i];
+        ws_data[writeIdx] = ws_data[writeIdx] || [];
+        ws_data[writeIdx][3] = row[0];
+        ws_data[writeIdx][4] = row[1];
+        ws_data[writeIdx][5] = row[2];
+        writeIdx++;
+      }
+    }
+    
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    ws['!cols'] = [{ wch: 45 }, { wch: 25 }, { wch: 3 }, { wch: 30 }, { wch: 15 }, { wch: 15 }];
+
+    // Format monetary cells with currency number format (up to 5 decimal places, no trailing zeros)
+    const moneyFormat = '$#,##0.#####';
+    const moneyKeywords = ['cost', 'total', 'materials', 'labor', 'carry', 'savings', 'mat $/sf', 'lab $/sf', 'per sf'];
+    for (let r = 0; r < ws_data.length; r++) {
+      const row = ws_data[r] || [];
+      const label = (row[0] || '').toString().toLowerCase();
+      // Column 1: many values live here (format when the label implies money)
+      if (typeof row[1] === 'number') {
+        if (moneyKeywords.some(k => label.indexOf(k) !== -1) || /total|cost|carry|materials|labor|savings/i.test(label)) {
+          const cellRef = XLSX.utils.encode_col(1) + (r + 1);
+          if (!ws[cellRef]) ws[cellRef] = {};
+          ws[cellRef].t = 'n';
+          ws[cellRef].v = Number(row[1]);
+          ws[cellRef].z = moneyFormat;
+        }
+      }
+      // Right-hand itemized columns (4 and 5) — always format numeric entries as money
+      [4,5].forEach(col => {
+        if (typeof row[col] === 'number') {
+          const cellRef = XLSX.utils.encode_col(col) + (r + 1);
+          if (!ws[cellRef]) ws[cellRef] = {};
+          ws[cellRef].t = 'n';
+          ws[cellRef].v = Number(row[col]);
+          ws[cellRef].z = moneyFormat;
+        }
+      });
+    }
+
+    // Apply bold formatting to headers and totals
+    boldRows.forEach(rowIdx => {
+      [0, 1, 3, 4, 5].forEach(colIdx => {
+        if (ws_data[rowIdx] && ws_data[rowIdx][colIdx] !== undefined && ws_data[rowIdx][colIdx] !== null) {
+          const cellRef = XLSX.utils.encode_col(colIdx) + (rowIdx + 1);
+          if (!ws[cellRef]) ws[cellRef] = {};
+          if (!ws[cellRef].s) ws[cellRef].s = {};
+          ws[cellRef].s.font = Object.assign({}, ws[cellRef].s.font, { bold: true });
+        }
+      });
+    });
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Quote');
+    XLSX.writeFile(wb, 'HydroBlok-Quote-' + quoteNum + '.xlsx');
+    
+  } catch(e) {
+    console.error('Export error:', e);
+    alert('Error generating export: ' + e.message);
+  }
 });
 
 // Initialize with true zero
