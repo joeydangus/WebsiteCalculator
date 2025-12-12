@@ -69,7 +69,7 @@
   .label{font-weight:600; margin-bottom:6px}
   .row{display:flex; gap:10px; flex-wrap:wrap}
   input[type="number"], input[type="text"]{
-    flex:1 1 240px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#fff; font-size:1rem;
+    flex:1 1 140px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#fff; font-size:1rem;
     -moz-appearance:textfield; appearance:textfield; /* remove steppers */
   }
   input[type="number"]::-webkit-outer-spin-button,
@@ -84,6 +84,15 @@
     flex:1; border:0; background:transparent; padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600; color:var(--text);
   }
   .seg button.active{background:#fff; border:1px solid var(--border); color:var(--primary)}
+
+  /* Ensure item rows keep inputs side-by-side where possible */
+  .item-row{display:flex; gap:10px; flex-wrap:nowrap}
+  .label-col{flex:0 0 140px; display:flex; align-items:center}
+  .input-col{flex:1}
+  .input-col input{width:100%}
+  /* New layout: label above inputs; pair inputs sit side-by-side */
+  .item-pair{display:flex; gap:10px}
+  .item-pair input{flex:1; min-width:0}
 
   .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
   .btn{
@@ -147,6 +156,21 @@
               <button id="type-multi" role="tab" aria-selected="false">Multi‑family</button>
             </div>
           </div>
+          <!-- Board thickness selector (affects Backer CI material $/SF) -->
+          <div class="control">
+            <div class="label">Backer CI board thickness</div>
+            <div class="row">
+              <select id="backer-thickness" style="flex:1 1 220px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#fff">
+                <option value="51.25">1/2"</option>
+                <option value="66.25">3/4"</option>
+                <option value="81.25" selected>1"</option>
+                <option value="106.25">1-1/2"</option>
+                <option value="127.50">2"</option>
+                <option value="147.50">2-1/2"</option>
+              </select>
+            </div>
+            <div class="muted">Based on a 4 x 8 board.</div>
+          </div>
 
           <!-- Wall area -->
           <div class="control">
@@ -178,143 +202,84 @@
               <input id="trad-lab-psf" type="number" min="0" step="0.00001" value="0" inputmode="decimal" pattern="[0-9.]*"
                      aria-label="Current labor cost per square foot" />
             </div>
+            <!-- hydro UI removed (shown only in XLSX export) -->
           </div>
 
           <!-- Itemized inputs (hidden by default) -->
           <div id="itemized-section" style="display:none;">
             <div class="control"><div class="label">Current Itemized Costs (Material $/SF / Labor $/SF)</div></div>
+            <!-- hydro UI removed (shown only in XLSX export) -->
             <div class="control">
-              <div class="row">
-                <div style="flex:1">
-                  <label class="label">WRB</label>
-                  <input class="item-mat" data-item="wrb" id="mat-wrb" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                </div>
-                <div style="flex:1">
-                  <label class="label">&nbsp;</label>
-                  <input class="item-lab" data-item="wrb" id="lab-wrb" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-                </div>
+              <div class="label">WRB</div>
+              <div class="item-pair">
+                <input class="item-mat" data-item="wrb" id="mat-wrb" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                <input class="item-lab" data-item="wrb" id="lab-wrb" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
               </div>
             </div>
             <div class="control">
-              <div class="row">
-                <div style="flex:1">
-                  <label class="label">EPS Foam</label>
-                  <input class="item-mat" data-item="eps" id="mat-eps" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                </div>
-                <div style="flex:1">
-                  <label class="label">&nbsp;</label>
-                  <input class="item-lab" data-item="eps" id="lab-eps" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-                </div>
+              <div class="label">EPS Foam</div>
+              <div class="item-pair">
+                <input class="item-mat" data-item="eps" id="mat-eps" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                <input class="item-lab" data-item="eps" id="lab-eps" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
               </div>
             </div>
             <div class="control">
-              <div class="row">
-                <div style="flex:1">
-                  <label class="label">Metal Wire</label>
-                  <input class="item-mat" data-item="wire" id="mat-wire" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                </div>
-                <div style="flex:1">
-                  <label class="label">&nbsp;</label>
-                  <input class="item-lab" data-item="wire" id="lab-wire" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-                </div>
+              <div class="label">Metal Wire</div>
+              <div class="item-pair">
+                <input class="item-mat" data-item="wire" id="mat-wire" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                <input class="item-lab" data-item="wire" id="lab-wire" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
               </div>
             </div>
             <div class="control">
-              <div class="row">
-                <div style="flex:1">
-                  <label class="label">Fasteners</label>
-                  <input class="item-mat" data-item="fasteners" id="mat-fasteners" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                </div>
-                <div style="flex:1">
-                  <label class="label">&nbsp;</label>
-                  <input class="item-lab" data-item="fasteners" id="lab-fasteners" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-                </div>
+              <div class="label">Fasteners</div>
+              <div class="item-pair">
+                <input class="item-mat" data-item="fasteners" id="mat-fasteners" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                <input class="item-lab" data-item="fasteners" id="lab-fasteners" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
               </div>
             </div>
             <div class="control">
-              <div class="row">
-                <div style="flex:1">
-                  <label class="label">Metal Trim</label>
-                  <input class="item-mat" data-item="trim" id="mat-trim" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                </div>
-                <div style="flex:1">
-                  <label class="label">&nbsp;</label>
-                  <input class="item-lab" data-item="trim" id="lab-trim" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-                </div>
+              <div class="label">Metal Trim</div>
+              <div class="item-pair">
+                <input class="item-mat" data-item="trim" id="mat-trim" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                <input class="item-lab" data-item="trim" id="lab-trim" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+              </div>
+            </div>
+            <!-- Bldg Prep moved to bottom as lab-only -->
+            <div class="control">
+              <div class="label">Base Coat</div>
+              <div class="item-pair">
+                <input class="item-mat" data-item="base" id="mat-base" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                <input class="item-lab" data-item="base" id="lab-base" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
               </div>
             </div>
             <div class="control">
-              <div class="row">
-                <div style="flex:1">
-                  <label class="label">Bldg Prep</label>
-                  <input class="item-mat" data-item="prep" id="mat-prep" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                </div>
-                <div style="flex:1">
-                  <label class="label">&nbsp;</label>
-                  <input class="item-lab" data-item="prep" id="lab-prep" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-                </div>
+              <div class="label">Finish Coat</div>
+              <div class="item-pair">
+                <input class="item-mat" data-item="finish" id="mat-finish" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
+                <input class="item-lab" data-item="finish" id="lab-finish" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
+              </div>
+            </div>
+            <!-- Mobilization, Scaffolding, Cleanup moved/removed; mobil & cleanup will be added as lab-only at the end -->
+            <!-- Add lab-only items at bottom: Bldg Prep, Mobilization, Cleanup -->
+            <div class="control">
+              <div class="label">Bldg Prep</div>
+              <div class="item-pair">
+                <input class="item-lab" data-item="prep" id="lab-prep" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
               </div>
             </div>
             <div class="control">
-              <div class="row">
-                <div style="flex:1">
-                  <label class="label">Base Coat</label>
-                  <input class="item-mat" data-item="base" id="mat-base" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                </div>
-                <div style="flex:1">
-                  <label class="label">&nbsp;</label>
-                  <input class="item-lab" data-item="base" id="lab-base" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-                </div>
+              <div class="label">Mobilization</div>
+              <div class="item-pair">
+                <input class="item-lab" data-item="mobil" id="lab-mobil" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
               </div>
             </div>
             <div class="control">
-              <div class="row">
-                <div style="flex:1">
-                  <label class="label">Finish Coat</label>
-                  <input class="item-mat" data-item="finish" id="mat-finish" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                </div>
-                <div style="flex:1">
-                  <label class="label">&nbsp;</label>
-                  <input class="item-lab" data-item="finish" id="lab-finish" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-                </div>
+              <div class="label">Cleanup</div>
+              <div class="item-pair">
+                <input class="item-lab" data-item="cleanup" id="lab-cleanup" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
               </div>
             </div>
-            <div class="control">
-              <div class="row">
-                <div style="flex:1">
-                  <label class="label">Mobilization</label>
-                  <input class="item-mat" data-item="mobil" id="mat-mobil" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                </div>
-                <div style="flex:1">
-                  <label class="label">&nbsp;</label>
-                  <input class="item-lab" data-item="mobil" id="lab-mobil" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-                </div>
-              </div>
-            </div>
-            <div class="control">
-              <div class="row">
-                <div style="flex:1">
-                  <label class="label">Scaffolding</label>
-                  <input class="item-mat" data-item="scaf" id="mat-scaf" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                </div>
-                <div style="flex:1">
-                  <label class="label">&nbsp;</label>
-                  <input class="item-lab" data-item="scaf" id="lab-scaf" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-                </div>
-              </div>
-            </div>
-            <div class="control">
-              <div class="row">
-                <div style="flex:1">
-                  <label class="label">Cleanup</label>
-                  <input class="item-mat" data-item="cleanup" id="mat-cleanup" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                </div>
-                <div style="flex:1">
-                  <label class="label">&nbsp;</label>
-                  <input class="item-lab" data-item="cleanup" id="lab-cleanup" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-                </div>
-              </div>
-            </div>
+
           </div>
 
           <!-- Carry costs (moved above quick/itemized sections) -->
@@ -395,13 +360,35 @@
   </div><!-- /shell -->
 
 <script>
-/* Per-SF constants for HydroBlok (keep fixed):
-   NEW (HydroBlok): Mat/SF = 5.43; Lab/SF = 3.95; Installed/SF = 9.38
+/* HydroBlok itemized pricing (Material $/SF, Labor $/SF).
+   These values drive both the visible HydroBlok totals and the XLSX itemized block.
+   Backer CI (R-5) corresponds to the EPS/insulation line (key: 'eps') and can be
+   replaced later with alternate board thickness pricing when provided.
 */
+const HYDRO_ITEMS = [
+  { name: 'Tyvek WRB', key: 'wrb', mat_psf: 0.18, lab_psf: 0.25 },
+  { name: 'Backer CI (R-5)', key: 'eps', mat_psf: 2.69, lab_psf: 0.50 },
+  { name: 'Fasteners', key: 'fasteners', mat_psf: 0.17, lab_psf: 0.15 },
+  { name: 'Washer', key: 'washer', mat_psf: 0.15, lab_psf: 0.10 },
+
+  { name: 'Metal Trim', key: 'trim', mat_psf: 0.75, lab_psf: 0.25 },
+  { name: 'Bldg Prep', key: 'prep', mat_psf: 0.35, lab_psf: 0.20 },
+  { name: 'HB Base', key: 'base', mat_psf: 0.33, lab_psf: 1.00 },
+  { name: 'Stucco Mesh', key: 'mesh', mat_psf: 0.19, lab_psf: 0.15 },
+  { name: 'Acrylic Finish', key: 'finish', mat_psf: 0.58, lab_psf: 1.00 },
+
+  { name: 'Mobilization', key: 'mobil', mat_psf: 0.03, lab_psf: 0.05 },
+  { name: 'Scaffolding', key: 'scaffolding', mat_psf: 0.00, lab_psf: 0.25 },
+  { name: 'Cleanup', key: 'cleanup', mat_psf: 0.03, lab_psf: 0.05 }
+];
+
 const RATES = {
-  new: { mat_psf: 5.43, lab_psf: 3.95 }
+  new: {
+    mat_psf: HYDRO_ITEMS.reduce((s, it) => s + (it.mat_psf || 0), 0),
+    lab_psf: HYDRO_ITEMS.reduce((s, it) => s + (it.lab_psf || 0), 0)
+  }
 };
-RATES.new.inst_psf = RATES.new.mat_psf + RATES.new.lab_psf; // 9.38
+RATES.new.inst_psf = RATES.new.mat_psf + RATES.new.lab_psf; // computed from HYDRO_ITEMS
 
 function fmtUSD(x){
   return new Intl.NumberFormat(undefined, { style:'currency', currency:'USD'}).format(x);
@@ -428,6 +415,7 @@ const carryCostEl = document.getElementById('carry-cost');
 const tradMatPsfEl= document.getElementById('trad-mat-psf');
 const tradLabPsfEl= document.getElementById('trad-lab-psf');
 const submitBtn   = document.getElementById('submit');
+const backerSelect = document.getElementById('backer-thickness');
 // Mode elements
 const modeQuickBtn = document.getElementById('mode-quick');
 const modeItemBtn  = document.getElementById('mode-itemized');
@@ -450,6 +438,30 @@ modeItemBtn.addEventListener('click', () => {
   quickSection.style.display = 'none';
   itemizedSection.style.display = '';
 });
+
+// Update HYDRO_ITEMS eps (Backer CI) mat_psf when user selects a board price
+function updateBackerPriceFromSelect(){
+  if (!backerSelect) return;
+  const pricePerBoard = Number(backerSelect.value || 0);
+  const pricePerSF = pricePerBoard / 32;
+  // find HYDRO_ITEMS entry with key 'eps' and update
+  const eps = HYDRO_ITEMS.find(i => i.key === 'eps');
+  if (eps) eps.mat_psf = pricePerSF;
+  // recompute RATES.new totals
+  RATES.new.mat_psf = HYDRO_ITEMS.reduce((s, it) => s + (it.mat_psf || 0), 0);
+  RATES.new.lab_psf = HYDRO_ITEMS.reduce((s, it) => s + (it.lab_psf || 0), 0);
+  RATES.new.inst_psf = RATES.new.mat_psf + RATES.new.lab_psf;
+  renderTotals();
+}
+
+// wire change handler and initialize once
+if (backerSelect){
+  backerSelect.addEventListener('change', updateBackerPriceFromSelect);
+  // set initial value based on selected option on load
+  updateBackerPriceFromSelect();
+}
+
+// HydroBlok UI-only table removed; itemized data will be included in XLSX exports only.
 
 function renderTotals(){
   // Read inputs and respect true zero
@@ -474,15 +486,29 @@ function renderTotals(){
     tradLabPsf = Number(tradLabPsfEl.value || 0);
     if (isNaN(tradLabPsf) || tradLabPsf < 0) tradLabPsf = 0;
   } else {
-    // Sum itemized fields (each input is $/SF)
-    const matEls = document.querySelectorAll('.item-mat');
-    const labEls = document.querySelectorAll('.item-lab');
-    tradMatPsf = Array.from(matEls).reduce((s, e) => {
-      let val = Number(e.value || 0);
+    // Sum itemized fields (use explicit mapping so lab-only items are handled)
+    const items = [
+      { name: 'WRB', matId: 'mat-wrb', labId: 'lab-wrb' },
+      { name: 'EPS Foam', matId: 'mat-eps', labId: 'lab-eps' },
+      { name: 'Metal Wire', matId: 'mat-wire', labId: 'lab-wire' },
+      { name: 'Fasteners', matId: 'mat-fasteners', labId: 'lab-fasteners' },
+      { name: 'Metal Trim', matId: 'mat-trim', labId: 'lab-trim' },
+      { name: 'Base Coat', matId: 'mat-base', labId: 'lab-base' },
+      { name: 'Finish Coat', matId: 'mat-finish', labId: 'lab-finish' },
+      { name: 'Bldg Prep', matId: null, labId: 'lab-prep' },
+      { name: 'Mobilization', matId: null, labId: 'lab-mobil' },
+      { name: 'Cleanup', matId: null, labId: 'lab-cleanup' }
+    ];
+    tradMatPsf = items.reduce((s, it) => {
+      if (!it.matId) return s;
+      const el = document.getElementById(it.matId);
+      const val = el ? Number(el.value || 0) : 0;
       return s + (isNaN(val) || val < 0 ? 0 : val);
     }, 0);
-    tradLabPsf = Array.from(labEls).reduce((s, e) => {
-      let val = Number(e.value || 0);
+    tradLabPsf = items.reduce((s, it) => {
+      if (!it.labId) return s;
+      const el = document.getElementById(it.labId);
+      const val = el ? Number(el.value || 0) : 0;
       return s + (isNaN(val) || val < 0 ? 0 : val);
     }, 0);
   }
@@ -572,6 +598,15 @@ document.getElementById('create-pdf').addEventListener('click', function(){
     const sf = Math.max(0, Number(sfEl.value || 0));
     const carryCost = Math.max(0, Number(carryCostEl.value || 0));
     const carryPct = buildType === 'res' ? 0.18 : 0.15;
+
+      // Ensure Backer CI name reflects the selected board thickness
+      if (backerSelect) {
+        const eps = HYDRO_ITEMS.find(i => i.key === 'eps');
+        try {
+          const label = backerSelect.options[backerSelect.selectedIndex].text;
+          if (eps) eps.name = `Backer CI (${label})`;
+        } catch(e) { /* ignore */ }
+      }
     
     let tradMatPsf = 0, tradLabPsf = 0;
     if (quoteMode === 'quick'){
@@ -605,27 +640,26 @@ document.getElementById('create-pdf').addEventListener('click', function(){
     const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const quoteNum = 'QB-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
     
-    // Collect itemized data if in itemized mode — include all itemized inputs (show all 11 rows)
+    // Collect itemized data if in itemized mode — use explicit mapping to preserve order and lab-only items
     let itemizedRows = [['ITEMIZED MATERIALS & LABOR'], ['Item', 'Mat $/SF', 'Lab $/SF']];
     if (quoteMode === 'itemized') {
-      const matEls = document.querySelectorAll('.item-mat');
-      const labEls = document.querySelectorAll('.item-lab');
-      for (let i = 0; i < matEls.length; i++) {
-        const matInput = matEls[i];
-        const labInput = labEls[i];
-        // find the label text near the input (same container)
-        let name = '';
-        try {
-          const lbl = matInput.parentElement.querySelector('.label');
-          name = lbl ? String(lbl.textContent || '').trim() : ('Item ' + (i+1));
-        } catch (e) {
-          name = 'Item ' + (i+1);
-        }
-        const mat = Number(matInput.value || 0);
-        const lab = Number((labInput && labInput.value) || 0);
-        // push every row (do not filter) so the exported sheet always contains all items
-        itemizedRows.push([name, mat, lab]);
-      }
+      const items = [
+        { name: 'WRB', matId: 'mat-wrb', labId: 'lab-wrb' },
+        { name: 'EPS Foam', matId: 'mat-eps', labId: 'lab-eps' },
+        { name: 'Metal Wire', matId: 'mat-wire', labId: 'lab-wire' },
+        { name: 'Fasteners', matId: 'mat-fasteners', labId: 'lab-fasteners' },
+        { name: 'Metal Trim', matId: 'mat-trim', labId: 'lab-trim' },
+        { name: 'Base Coat', matId: 'mat-base', labId: 'lab-base' },
+        { name: 'Finish Coat', matId: 'mat-finish', labId: 'lab-finish' },
+        { name: 'Bldg Prep', matId: null, labId: 'lab-prep' },
+        { name: 'Mobilization', matId: null, labId: 'lab-mobil' },
+        { name: 'Cleanup', matId: null, labId: 'lab-cleanup' }
+      ];
+      items.forEach(it => {
+        const mat = it.matId ? Number(document.getElementById(it.matId)?.value || 0) : '';
+        const lab = it.labId ? Number(document.getElementById(it.labId)?.value || 0) : '';
+        itemizedRows.push([it.name, mat === '' ? '' : mat, lab === '' ? '' : lab]);
+      });
     }
     
     // Prevent exporting if both totals are zero
@@ -707,26 +741,24 @@ document.getElementById('create-pdf').addEventListener('click', function(){
     ws_data.push(['Reduced trash haul away and project costs']);
     ws_data.push(['Improved durability and weather resistance']);
     
-    // Add itemized data to the right if in itemized mode
-    if (quoteMode === 'itemized' && itemizedRows.length > 1) {
-      // locate a target header row for the right-side table (search by first column or create one)
-      let rightHeaderIdx = ws_data.findIndex(r => r && r[3] && String(r[3]).toString().startsWith('Itemized'));
-      if (rightHeaderIdx === -1) {
-        // place right table after QUOTE INFORMATION block if present, otherwise after a sensible index
-        const quoteInfoIdx = ws_data.findIndex(r => r && r[0] && String(r[0]).startsWith('QUOTE INFORMATION'));
-        rightHeaderIdx = (quoteInfoIdx === -1) ? 8 : quoteInfoIdx + 2;
-        ws_data[rightHeaderIdx] = ws_data[rightHeaderIdx] || [];
-        ws_data[rightHeaderIdx][3] = 'Itemized';
-        ws_data[rightHeaderIdx + 1] = ws_data[rightHeaderIdx + 1] || [];
-        ws_data[rightHeaderIdx + 1][3] = 'Line Item';
-        ws_data[rightHeaderIdx + 1][4] = 'Mat $/SF';
-        ws_data[rightHeaderIdx + 1][5] = 'Lab $/SF';
-        // mark header rows for bolding
-        boldRows.push(rightHeaderIdx, rightHeaderIdx + 1);
-      }
+    // Always add an itemized table on the right for XLSX (user itemized rows if present, then HydroBlok itemized)
+    // locate or create a target header row for the right-side table
+    let rightHeaderIdx = ws_data.findIndex(r => r && r[3] && String(r[3]).toString().startsWith('Itemized'));
+    if (rightHeaderIdx === -1) {
+      const quoteInfoIdx = ws_data.findIndex(r => r && r[0] && String(r[0]).startsWith('QUOTE INFORMATION'));
+      rightHeaderIdx = (quoteInfoIdx === -1) ? 8 : quoteInfoIdx + 2;
+      ws_data[rightHeaderIdx] = ws_data[rightHeaderIdx] || [];
+      ws_data[rightHeaderIdx][3] = 'Itemized';
+      ws_data[rightHeaderIdx + 1] = ws_data[rightHeaderIdx + 1] || [];
+      ws_data[rightHeaderIdx + 1][3] = 'Line Item';
+      ws_data[rightHeaderIdx + 1][4] = 'Mat $/SF';
+      ws_data[rightHeaderIdx + 1][5] = 'Lab $/SF';
+      boldRows.push(rightHeaderIdx, rightHeaderIdx + 1);
+    }
 
-      // write item rows starting two rows after our header
-      let writeIdx = rightHeaderIdx + 2;
+    // write any user-provided itemized rows (if in itemized mode)
+    let writeIdx = rightHeaderIdx + 2;
+    if (quoteMode === 'itemized' && itemizedRows.length > 1) {
       for (let i = 2; i < itemizedRows.length; i++) {
         const row = itemizedRows[i];
         ws_data[writeIdx] = ws_data[writeIdx] || [];
@@ -735,6 +767,26 @@ document.getElementById('create-pdf').addEventListener('click', function(){
         ws_data[writeIdx][5] = row[2];
         writeIdx++;
       }
+    }
+
+    // Append HydroBlok itemized rows always
+    ws_data[writeIdx] = ws_data[writeIdx] || [];
+    ws_data[writeIdx][3] = 'HydroBlok Itemized';
+    boldRows.push(writeIdx);
+    writeIdx++;
+    ws_data[writeIdx] = ws_data[writeIdx] || [];
+    ws_data[writeIdx][3] = 'Line Item';
+    ws_data[writeIdx][4] = 'Mat $/SF';
+    ws_data[writeIdx][5] = 'Lab $/SF';
+    boldRows.push(writeIdx);
+    writeIdx++;
+    for (let h = 0; h < HYDRO_ITEMS.length; h++) {
+      const it = HYDRO_ITEMS[h];
+      ws_data[writeIdx] = ws_data[writeIdx] || [];
+      ws_data[writeIdx][3] = it.name;
+      ws_data[writeIdx][4] = typeof it.mat_psf === 'number' ? it.mat_psf : '';
+      ws_data[writeIdx][5] = typeof it.lab_psf === 'number' ? it.lab_psf : '';
+      writeIdx++;
     }
     
     const ws = XLSX.utils.aoa_to_sheet(ws_data);
