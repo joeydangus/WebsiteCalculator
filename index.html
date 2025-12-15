@@ -1,330 +1,184 @@
 
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Instant Quote Calculator</title>
+<title>Instant Quote — PDF Export</title>
 <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-  /* Brand font: Aeonik Medium (update URL to your hosted file) */
-  @font-face {
-    font-family: "Aeonik";
-    src: url("/fonts/Aeonik-Medium.woff2") format("woff2"); /* <-- update path */
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
-  }
-
-  /* Minimalist palette aligned to the exact HydroBlok green */
-  :root{
-    --page-bg:#ffffff;
-    --card-bg:#ffffff;
-    --text:#0f172a;
-    --muted:#64748b;
-
-    /* Exact HydroBlok logo green + darker hover */
-    --primary:#509E2E;      /* dominant green from your logo */
-    --primary-700:#407E25;  /* ~20% darker for hover/pressed */
-
-    --border:#e5e7eb;
-    --soft-shadow:0 10px 30px rgba(15,23,42,.10);
-    --radius:20px;
-  }
-
-  *{box-sizing:border-box}
-  body{
-    margin:0; background: var(--page-bg);
-    font-family:"Aeonik", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-    color: var(--text);
-  }
-
-  /* Single rounded box */
-  .shell{max-width:980px;margin:40px auto;padding:0 16px}
-  .box{
-    background:var(--card-bg); border:1px solid var(--border);
-    border-radius:var(--radius); box-shadow:var(--soft-shadow); overflow:hidden;
-  }
-
-  .hero{padding:20px 22px; border-bottom:1px solid var(--border)}
-  .hero h1{margin:0 0 4px; font-size:clamp(1.25rem,2.5vw,1.6rem); font-weight:700}
-  .hero p{margin:0; color:var(--muted); font-size:.95rem}
-
-  .grid{display:grid; grid-template-columns:1.05fr .95fr; gap:0}
-  @media (max-width:880px){ .grid{grid-template-columns:1fr} }
-
-  .pane{padding:18px 22px}
-  .pane + .pane{border-left:1px solid var(--border)}
-  @media (max-width:880px){
-    .pane + .pane{border-left:none; border-top:1px solid var(--border)}
-  }
-
-  .pane header{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
-  .pane h2{margin:0; font-size:1.05rem; font-weight:700}
-  .muted{color:var(--muted)}
-
-  /* Controls */
-  .control{margin-bottom:14px}
-  .label{font-weight:600; margin-bottom:6px}
-  .row{display:flex; gap:10px; flex-wrap:wrap}
-  input[type="number"], input[type="text"]{
-    flex:1 1 140px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#fff; font-size:1rem;
-    -moz-appearance:textfield; appearance:textfield; /* remove steppers */
-  }
-  input[type="number"]::-webkit-outer-spin-button,
-  input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
-  input:focus{outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(80,158,46,.18)}
-
-  /* faint placeholder for itemized Mat/Lab inputs */
-  .item-mat::placeholder, .item-lab::placeholder { color: rgba(15,23,42,0.35); }
-
-  .seg{display:flex; background:#f8fafc; border:1px solid var(--border); border-radius:999px; padding:4px}
-  .seg button{
-    flex:1; border:0; background:transparent; padding:8px 12px; border-radius:999px; cursor:pointer; font-weight:600; color:var(--text);
-  }
-  .seg button.active{background:#fff; border:1px solid var(--border); color:var(--primary)}
-
-  /* Ensure item rows keep inputs side-by-side where possible */
-  .item-row{display:flex; gap:10px; flex-wrap:nowrap}
-  .label-col{flex:0 0 140px; display:flex; align-items:center}
-  .input-col{flex:1}
-  .input-col input{width:100%}
-  /* New layout: label above inputs; pair inputs sit side-by-side */
-  .item-pair{display:flex; gap:10px}
-  .item-pair input{flex:1; min-width:0}
-
-  .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
-  .btn{
-    appearance:none; border:1px solid var(--border); background:#fff; color:var(--text);
-    padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600;
-  }
-  .btn.primary{background:var(--primary); border-color:var(--primary-700); color:#fff}
-  .btn.primary:hover{background:var(--primary-700)}
-
-  /* Key Points — two columns, subtle */
-  .kvp{margin-top:10px; border-top:1px dashed var(--border); padding-top:10px}
-  .kvp h3{margin:0 0 8px; font-size:.95rem; color:#334155; font-weight:700}
-  .kvp-cols{display:grid; grid-template-columns:1fr 1fr; gap:8px}
-  .kvp ul{margin:0; padding-left:18px; color:var(--muted); font-size:.85rem; line-height:1.35}
-  .kvp li{margin:4px 0}
-
-  /* Summary */
-  .section-label{font-weight:700; color:#334155; margin-bottom:8px}
-  .price-row{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
-  .old-price{color:#94a3b8; text-decoration:line-through; font-size:1rem}
-  .new-price{color:var(--primary); font-weight:800; font-size:clamp(1.35rem,3.8vw,2.1rem)}
-  .badge{display:inline-block; background:#dcfce7; color:#065f46; border:1px solid #bbf7d0; padding:6px 10px; border-radius:999px; font-weight:700}
-  .breakdown{margin-top:10px; display:grid; gap:6px}
-  .row2{display:flex; justify-content:space-between}
-
-  /* Per-SF notes (small, muted) */
-  .psf{display:block; font-size:.85rem; color:#94a3b8}
+  /* reuse calculator styles (compact) */
+  body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#fff;color:#0f172a}
+  .shell{max-width:980px;margin:20px auto;padding:10px}
+  .box{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
+  .hero{padding:16px;border-bottom:1px solid #e5e7eb}
+  .grid{display:grid;grid-template-columns:1.05fr .95fr}
+  @media (max-width:880px){.grid{grid-template-columns:1fr}}
+  .pane{padding:14px}
+  .label{font-weight:600;margin-bottom:6px;display:block}
+  input[type="number"], select{padding:8px 10px;border-radius:8px;border:1px solid #e5e7eb;width:100%}
+  .seg{display:flex;background:#f8fafc;border-radius:999px;padding:4px}
+  .seg button{flex:1;border:0;background:transparent;padding:8px 12px;border-radius:999px;cursor:pointer}
+  .seg button.active{background:#fff;border:1px solid #e5e7eb;color:#509E2E}
+  .item-pair{display:flex;gap:8px}
+  .item-pair input{flex:1}
+  .actions{display:flex;gap:8px;margin-top:12px}
+  .btn{padding:10px 12px;border-radius:8px;border:1px solid #e5e7eb;cursor:pointer}
+  .btn.primary{background:#509E2E;color:#fff;border-color:#407E25}
+  .muted{color:#64748b;font-size:0.9rem}
+  /* Branding & summary styles (match calculator) */
+  .section-label{font-weight:700;color:#334155;margin-bottom:8px}
+  .old-price{color:#94a3b8;text-decoration:line-through;font-size:1rem}
+  .new-price{color:var(--primary,#509E2E);font-weight:800;font-size:1.6rem}
+  /* larger primary total */
+  .new-price{font-size:1.9rem}
+  .badge{display:inline-block;background:#dcfce7;color:#065f46;border:1px solid #bbf7d0;padding:6px 10px;border-radius:999px;font-weight:700}
+  .breakdown{margin-top:10px;display:grid;gap:6px}
+  .row2{display:flex;justify-content:space-between}
+  .psf{display:block;font-size:.85rem;color:#94a3b8}
+  /* printable container styling */
+  #pdf-content{display:none;padding:24px;color:#0f172a}
+  .pdf-header{display:flex;justify-content:space-between;align-items:center}
+  .brand{color:#509E2E;font-weight:800;font-size:1.25rem}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  td,th{padding:6px;border:1px solid #eaeef0}
+  th{background:#f8fafc;text-align:left}
+  .right{text-align:right}
+  .keypoints{display:grid;grid-template-columns:1fr 1fr;gap:6px;list-style:disc;padding-left:18px;margin-top:6px}
+  .keypoints li{margin:4px 0;font-size:0.7rem;color:#94a3b8}
 </style>
 </head>
 <body>
   <div class="shell">
     <div class="box">
-      <!-- HEADER -->
       <div class="hero">
         <h1>Instant Quote Calculator</h1>
-        <p>Enter the system info to get a free instant comparison.</p>
+        <p class="muted">Enter the pricing for your current solution and get an instant comparison</p>
       </div>
-
-      <!-- CONTENT -->
       <div class="grid">
-        <!-- LEFT: Inputs -->
         <div class="pane">
-          <header>
-            <h2>Your Job Inputs</h2>
-            <span class="muted">Five fields</span>
-          </header>
-
-          <!-- Mode: Quick vs Itemized -->
-          <div class="control">
-            <div class="label">Quote Mode</div>
-            <div class="seg" role="tablist" aria-label="Quote mode">
-              <button id="mode-quick" class="active" role="tab" aria-selected="true">Quick Quote</button>
-              <button id="mode-itemized" role="tab" aria-selected="false">Itemized Quote</button>
-            </div>
-          </div>
-          <!-- Build type -->
-          <div class="control">
-            <div class="label">Build type</div>
-            <div class="seg" role="tablist" aria-label="Build type">
-              <button id="type-res" class="active" role="tab" aria-selected="true">Residential</button>
-              <button id="type-multi" role="tab" aria-selected="false">Multi‑family</button>
-            </div>
-          </div>
-          <!-- Board thickness selector (affects Backer CI material $/SF) -->
-          <div class="control">
-            <div class="label">Backer CI board thickness</div>
-            <div class="row">
-              <select id="backer-thickness" style="flex:1 1 220px; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:#fff">
-                <option value="51.25">1/2"</option>
-                <option value="66.25">3/4"</option>
-                <option value="81.25" selected>1"</option>
-                <option value="106.25">1-1/2"</option>
-                <option value="127.50">2"</option>
-                <option value="147.50">2-1/2"</option>
-              </select>
-            </div>
-            <div class="muted">Based on 4 x 8 boards.</div>
+          <label class="label">Quote Mode</label>
+          <div class="seg" role="tablist">
+            <button id="mode-quick" class="active">Quick Quote</button>
+            <button id="mode-itemized">Itemized Quote</button>
           </div>
 
-          <!-- Wall area -->
-          <div class="control">
-            <div class="label">Total wall area (SF)</div>
-            <div class="row">
-              <input id="sf" type="number" min="0" step="0.00001" value="0" inputmode="numeric" pattern="[0-9.]*"
-                     aria-label="Total wall area in square feet" />
+          <div style="margin-top:10px">
+            <label class="label">Build type</label>
+            <div class="seg" role="tablist">
+              <button id="type-res" class="active">Residential</button>
+              <button id="type-multi">Multi‑family</button>
             </div>
-            <div class="muted">Tip: include openings &amp; waste if that matches your estimating method.</div>
           </div>
 
-          <!-- Carry costs (moved so it appears before Quick/Itemized inputs) -->
-          <div class="control">
-            <div class="label">Total projected carry costs (USD)</div>
-                 <input id="carry-cost" type="number" min="0" step="0.00001" value="0" inputmode="numeric" pattern="[0-9.]*"
-                   aria-label="Total project carry costs in USD" />
-            <div class="muted">Carry Costs are Discounted Based on savings compared to traditional EIFS systems</div>
+          <div style="margin-top:10px">
+            <label class="label">Backer CI board thickness</label>
+            <select id="backer-thickness">
+              <option value="51.25">1/2"</option>
+              <option value="66.25">3/4"</option>
+              <option value="81.25" selected>1"</option>
+              <option value="106.25">1-1/2"</option>
+              <option value="127.50">2"</option>
+              <option value="147.50">2-1/2"</option>
+            </select>
+            <div class="muted">Based on a 4 x 8 board.</div>
           </div>
 
-          <!-- Quick inputs (existing) -->
-          <div id="quick-section">
-            <div class="control">
-              <div class="label">Current materials cost ($/SF)</div>
-              <input id="trad-mat-psf" type="number" min="0" step="0.00001" value="0" inputmode="decimal" pattern="[0-9.]*"
-                     aria-label="Current materials cost per square foot" />
-            </div>
-            <div class="control">
-              <div class="label">Current labor cost ($/SF)</div>
-              <input id="trad-lab-psf" type="number" min="0" step="0.00001" value="0" inputmode="decimal" pattern="[0-9.]*"
-                     aria-label="Current labor cost per square foot" />
-            </div>
-            <!-- hydro UI removed (shown only in XLSX export) -->
+          <div style="margin-top:10px">
+            <label class="label">Total wall area (SF)</label>
+            <input id="sf" type="number" min="0" step="0.00001" value="0" />
           </div>
 
-          <!-- Itemized inputs (hidden by default) -->
-          <div id="itemized-section" style="display:none;">
-            <div class="control"><div class="label">Current Itemized Costs (Material $/SF / Labor $/SF)</div></div>
-            <!-- hydro UI removed (shown only in XLSX export) -->
-            <div class="control">
-              <div class="label">WRB</div>
-              <div class="item-pair">
-                <input class="item-mat" data-item="wrb" id="mat-wrb" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                <input class="item-lab" data-item="wrb" id="lab-wrb" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-              </div>
-            </div>
-            <div class="control">
-              <div class="label">EPS Foam</div>
-              <div class="item-pair">
-                <input class="item-mat" data-item="eps" id="mat-eps" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                <input class="item-lab" data-item="eps" id="lab-eps" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-              </div>
-            </div>
-            <div class="control">
-              <div class="label">Metal Wire</div>
-              <div class="item-pair">
-                <input class="item-mat" data-item="wire" id="mat-wire" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                <input class="item-lab" data-item="wire" id="lab-wire" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-              </div>
-            </div>
-            <div class="control">
-              <div class="label">Fasteners</div>
-              <div class="item-pair">
-                <input class="item-mat" data-item="fasteners" id="mat-fasteners" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                <input class="item-lab" data-item="fasteners" id="lab-fasteners" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-              </div>
-            </div>
-            <div class="control">
-              <div class="label">Metal Trim</div>
-              <div class="item-pair">
-                <input class="item-mat" data-item="trim" id="mat-trim" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                <input class="item-lab" data-item="trim" id="lab-trim" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-              </div>
-            </div>
-            <!-- Bldg Prep moved to bottom as lab-only -->
-            <div class="control">
-              <div class="label">Base Coat</div>
-              <div class="item-pair">
-                <input class="item-mat" data-item="base" id="mat-base" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                <input class="item-lab" data-item="base" id="lab-base" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-              </div>
-            </div>
-            <div class="control">
-              <div class="label">Finish Coat</div>
-              <div class="item-pair">
-                <input class="item-mat" data-item="finish" id="mat-finish" type="number" min="0" step="0.00001" placeholder="Mat $/SF" />
-                <input class="item-lab" data-item="finish" id="lab-finish" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-              </div>
-            </div>
-            <!-- Mobilization, Scaffolding, Cleanup moved/removed; mobil & cleanup will be added as lab-only at the end -->
-            <!-- Add lab-only items at bottom: Bldg Prep, Mobilization, Cleanup -->
-            <div class="control">
-              <div class="label">Bldg Prep</div>
-              <div class="item-pair">
-                <input class="item-lab" data-item="prep" id="lab-prep" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-              </div>
-            </div>
-            <div class="control">
-              <div class="label">Mobilization</div>
-              <div class="item-pair">
-                <input class="item-lab" data-item="mobil" id="lab-mobil" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-              </div>
-            </div>
-            <div class="control">
-              <div class="label">Cleanup</div>
-              <div class="item-pair">
-                <input class="item-lab" data-item="cleanup" id="lab-cleanup" type="number" min="0" step="0.00001" placeholder="Lab $/SF" />
-              </div>
-            </div>
-
+          <div style="margin-top:10px">
+            <label class="label">Total projected carry costs (USD)</label>
+            <input id="carry-cost" type="number" min="0" step="0.00001" value="0" />
           </div>
 
-          <!-- Carry costs (moved above quick/itemized sections) -->
-          <!-- (removed from here; placed earlier after Wall area) -->
+          <div id="quick-section" style="margin-top:10px">
+            <label class="label">Current materials cost ($/SF)</label>
+            <input id="trad-mat-psf" type="number" min="0" step="0.00001" value="0" />
+            <label class="label" style="margin-top:8px">Current labor cost ($/SF)</label>
+            <input id="trad-lab-psf" type="number" min="0" step="0.00001" value="0" />
+          </div>
 
-          <!-- Submit moved here: after all inputs, before Key Points -->
-          <div class="actions">
-            <button class="btn primary" id="submit">Submit</button>
+          <div id="itemized-section" style="display:none;margin-top:10px">
+            <div class="muted">Itemized inputs</div>
+            <div style="margin-top:8px">
+              <label class="label">WRB</label>
+              <div class="item-pair"><input class="item-mat" id="mat-wrb" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-wrb" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
+            </div>
+            <div style="margin-top:8px">
+              <label class="label">EPS Foam</label>
+              <div class="item-pair"><input class="item-mat" id="mat-eps" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-eps" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
+            </div>
+            <div style="margin-top:8px">
+              <label class="label">Metal Wire</label>
+              <div class="item-pair"><input class="item-mat" id="mat-wire" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-wire" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
+            </div>
+            <div style="margin-top:8px">
+              <label class="label">Fasteners</label>
+              <div class="item-pair"><input class="item-mat" id="mat-fasteners" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-fasteners" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
+            </div>
+            <div style="margin-top:8px">
+              <label class="label">Metal Trim</label>
+              <div class="item-pair"><input class="item-mat" id="mat-trim" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-trim" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
+            </div>
+            <div style="margin-top:8px">
+              <label class="label">Base Coat</label>
+              <div class="item-pair"><input class="item-mat" id="mat-base" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-base" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
+            </div>
+            <div style="margin-top:8px">
+              <label class="label">Finish Coat</label>
+              <div class="item-pair"><input class="item-mat" id="mat-finish" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-finish" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
+            </div>
+            <div style="margin-top:8px">
+              <label class="label">Bldg Prep (lab-only)</label>
+              <div class="item-pair"><input class="item-lab" id="lab-prep" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
+            </div>
+            <div style="margin-top:8px">
+              <label class="label">Mobilization (lab-only)</label>
+              <div class="item-pair"><input class="item-lab" id="lab-mobil" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
+            </div>
+            <div style="margin-top:8px">
+              <label class="label">Cleanup (lab-only)</label>
+              <div class="item-pair"><input class="item-lab" id="lab-cleanup" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
+            </div>
+          </div>
+
+          <div style="margin-top:8px">
             <button class="btn" id="reset">Reset</button>
           </div>
 
-          <!-- Key Points -->
-          <div class="kvp">
-            <h3>Key Points</h3>
-            <div class="kvp-cols">
-              <ul>
-                <li>Better resale value over time</li>
-                <li>Builders Insurance Savings</li>
-                <li>Carry Insurance Savings</li>
-                <li>Shorter Curing Times Between Coats</li>
-              </ul>
-              <ul>
-                <li>No Lath Inspections</li>
-                <li>De-risk labor inflation costs</li>
-                <li>Reduced Trash Haul Away</li>
-              </ul>
-            </div>
+          <div style="margin-top:12px">
+            <div class="section-label">Key Points</div>
+            <ul class="keypoints">
+              <li>Better resale value over time</li>
+              <li>Builders Insurance Savings</li>
+              <li>Carry Insurance Savings</li>
+              <li>Shorter Curing Times Between Coats</li>
+              <li>No Lath Inspections</li>
+              <li>De-risk labor inflation costs</li>
+              <li>Reduced Trash Haul Away</li>
+            </ul>
+          </div>
+
+          <div class="actions">
+            <button class="btn primary" id="create-pdf" style="display:none">Download PDF Quote</button>
           </div>
         </div>
 
-        <!-- RIGHT: Summary -->
-        <div class="pane">
-          <header>
-            <h2>Estimate Summary</h2>
-            <span class="muted">Traditional vs HydroBlok</span>
-          </header>
-
+        <div class="pane" id="preview">
           <div class="section-label">Traditional Methods:</div>
-          <div class="price-row">
+          <div class="price-row" style="display:flex;align-items:center;gap:12px;">
             <span class="old-price" id="old-total">$0.00</span>
             <span class="psf" id="old-psf">$0.00/SF</span>
           </div>
 
           <div class="section-label" style="margin-top:12px">HydroBlok:</div>
-          <div class="price-row">
+          <div class="price-row" style="display:flex;align-items:center;gap:12px;">
             <div class="new-price" id="new-total">$0.00</div>
             <span class="badge" id="pct">0.0% savings</span>
             <span class="psf" id="new-psf">$0.00/SF</span>
@@ -336,516 +190,362 @@
             <div class="row2"><span>HydroBlok materials</span><strong id="new-mat">$0.00</strong></div>
             <div class="row2"><span>HydroBlok labor</span><strong id="new-lab">$0.00</strong></div>
             <div class="row2"><span>Hydroblok Carry cost</span><strong id="carry-sav">$0.00 (18%)</strong></div>
-            <!-- per-item HydroBlok breakdown removed; totals remain above -->
-            <div class="row2" style="border-top:1px solid var(--border); padding-top:8px">
+            <div class="row2" style="border-top:1px solid #e5e7eb;padding-top:8px">
               <span>Savings vs traditional</span>
               <div style="display:flex;flex-direction:column;align-items:flex-end">
                 <strong id="delta">$0.00</strong>
                 <span class="psf" id="delta-psf">$0.00/SF</span>
               </div>
             </div>
-          </div>
-
-          <!-- Download CSV and Submit Buttons -->
-          <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <button class="btn primary" id="create-pdf">Export .XSLX quote</button>
-            <button class="btn primary" id="submit-right">Calculate & Submit</button>
-          </div>
-          <div style="margin-top:10px">
-            <span class="muted">Quote susceptible to change based on individual project requirements</span>
+            <div style="margin-top:12px;display:flex;gap:8px;flex-direction:column;align-items:flex-start">
+              <button class="btn primary" id="create-pdf-right">Download PDF Quote</button>
+              <p class="muted" style="margin-top:8px">Quote susceptible to change based on individual project requirements</p>
+            </div>
           </div>
         </div>
-      </div><!-- /grid -->
-    </div><!-- /box -->
-  </div><!-- /shell -->
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF printable container (populated at export time) -->
+  <div id="pdf-content"></div>
 
 <script>
-/* HydroBlok itemized pricing (Material $/SF, Labor $/SF).
-   These values drive both the visible HydroBlok totals and the XLSX itemized block.
-   Backer CI (R-5) corresponds to the EPS/insulation line (key: 'eps') and can be
-   replaced later with alternate board thickness pricing when provided.
-*/
+// HYDRO_ITEMS same as in calc.html
 const HYDRO_ITEMS = [
   { name: 'Tyvek WRB', key: 'wrb', mat_psf: 0.18, lab_psf: 0.25 },
   { name: 'Backer CI (R-5)', key: 'eps', mat_psf: 2.69, lab_psf: 0.50 },
   { name: 'Fasteners', key: 'fasteners', mat_psf: 0.17, lab_psf: 0.15 },
-  { name: 'Washer', key: 'washer', mat_psf: 0.15, lab_psf: 0.10 },
-
+  { name: 'Washers', key: 'washer', mat_psf: 0.15, lab_psf: 0.10 },
   { name: 'Metal Trim', key: 'trim', mat_psf: 0.75, lab_psf: 0.25 },
-  { name: 'Bldg Prep', key: 'prep', mat_psf: 0.35, lab_psf: 0.20 },
   { name: 'HB Base', key: 'base', mat_psf: 0.33, lab_psf: 1.00 },
   { name: 'Stucco Mesh', key: 'mesh', mat_psf: 0.19, lab_psf: 0.15 },
   { name: 'Acrylic Finish', key: 'finish', mat_psf: 0.58, lab_psf: 1.00 },
-
-  { name: 'Mobilization', key: 'mobil', mat_psf: 0.03, lab_psf: 0.05 },
-  { name: 'Scaffolding', key: 'scaffolding', mat_psf: 0.00, lab_psf: 0.25 },
-  { name: 'Cleanup', key: 'cleanup', mat_psf: 0.03, lab_psf: 0.05 }
+  { name: 'Bldg Prep', key: 'prep', mat_psf: 0.00, lab_psf: 0.20 },
+  { name: 'Mobilization', key: 'mobil', mat_psf: 0.00, lab_psf: 0.05 },
+  { name: 'Cleanup', key: 'cleanup', mat_psf: 0.00, lab_psf: 0.05 }
 ];
 
-const RATES = {
-  new: {
-    mat_psf: HYDRO_ITEMS.reduce((s, it) => s + (it.mat_psf || 0), 0),
-    lab_psf: HYDRO_ITEMS.reduce((s, it) => s + (it.lab_psf || 0), 0)
-  }
-};
-RATES.new.inst_psf = RATES.new.mat_psf + RATES.new.lab_psf; // computed from HYDRO_ITEMS
+const RATES = { new: { mat_psf: HYDRO_ITEMS.reduce((s,it)=>s+(it.mat_psf||0),0), lab_psf: HYDRO_ITEMS.reduce((s,it)=>s+(it.lab_psf||0),0) }};
+RATES.new.inst_psf = RATES.new.mat_psf + RATES.new.lab_psf;
 
-function fmtUSD(x){
-  return new Intl.NumberFormat(undefined, { style:'currency', currency:'USD'}).format(x);
-}
+function fmtUSD(x){return new Intl.NumberFormat(undefined,{style:'currency',currency:'USD'}).format(x)}
 
-// Build type segmented control
-const typeResBtn   = document.getElementById('type-res');
-const typeMultiBtn = document.getElementById('type-multi');
-let buildType = 'res'; // 'res' | 'multi'
-
-typeResBtn.addEventListener('click', ()=>{
-  buildType = 'res';
-  typeResBtn.classList.add('active');  typeResBtn.setAttribute('aria-selected','true');
-  typeMultiBtn.classList.remove('active'); typeMultiBtn.setAttribute('aria-selected','false');
-});
-typeMultiBtn.addEventListener('click', ()=>{
-  buildType = 'multi';
-  typeMultiBtn.classList.add('active'); typeMultiBtn.setAttribute('aria-selected','true');
-  typeResBtn.classList.remove('active'); typeResBtn.setAttribute('aria-selected','false');
-});
-
-const sfEl        = document.getElementById('sf');
-const carryCostEl = document.getElementById('carry-cost');
-const tradMatPsfEl= document.getElementById('trad-mat-psf');
-const tradLabPsfEl= document.getElementById('trad-lab-psf');
-const submitBtn   = document.getElementById('submit');
+// Elements
+const sfEl = document.getElementById('sf');
+const carryEl = document.getElementById('carry-cost');
+const tradMatEl = document.getElementById('trad-mat-psf');
+const tradLabEl = document.getElementById('trad-lab-psf');
+const createPdfBtn = document.getElementById('create-pdf');
 const backerSelect = document.getElementById('backer-thickness');
-// Mode elements
+
+// Mode toggles
 const modeQuickBtn = document.getElementById('mode-quick');
-const modeItemBtn  = document.getElementById('mode-itemized');
-const quickSection = document.getElementById('quick-section');
-const itemizedSection = document.getElementById('itemized-section');
-let quoteMode = 'quick'; // 'quick' | 'itemized'
+const modeItemBtn = document.getElementById('mode-itemized');
+let quoteMode = 'quick';
+modeQuickBtn.addEventListener('click', ()=>{quoteMode='quick';modeQuickBtn.classList.add('active');modeItemBtn.classList.remove('active');document.getElementById('quick-section').style.display='';document.getElementById('itemized-section').style.display='none'; renderPreview();});
+modeItemBtn.addEventListener('click', ()=>{quoteMode='itemized';modeItemBtn.classList.add('active');modeQuickBtn.classList.remove('active');document.getElementById('quick-section').style.display='none';document.getElementById('itemized-section').style.display=''; renderPreview();});
 
-// Mode toggle handlers
-modeQuickBtn.addEventListener('click', () => {
-  quoteMode = 'quick';
-  modeQuickBtn.classList.add('active'); modeQuickBtn.setAttribute('aria-selected','true');
-  modeItemBtn.classList.remove('active'); modeItemBtn.setAttribute('aria-selected','false');
-  quickSection.style.display = '';
-  itemizedSection.style.display = 'none';
-});
-modeItemBtn.addEventListener('click', () => {
-  quoteMode = 'itemized';
-  modeItemBtn.classList.add('active'); modeItemBtn.setAttribute('aria-selected','true');
-  modeQuickBtn.classList.remove('active'); modeQuickBtn.setAttribute('aria-selected','false');
-  quickSection.style.display = 'none';
-  itemizedSection.style.display = '';
-});
+// Build type buttons
+const typeResBtn = document.getElementById('type-res');
+const typeMultiBtn = document.getElementById('type-multi');
+let buildType = 'res';
+typeResBtn.addEventListener('click', ()=>{buildType='res';typeResBtn.classList.add('active');typeMultiBtn.classList.remove('active')});
+typeMultiBtn.addEventListener('click', ()=>{buildType='multi';typeMultiBtn.classList.add('active');typeResBtn.classList.remove('active')});
+// ensure preview updates when build type changes
+typeResBtn.addEventListener('click', ()=>{ renderPreview(); });
+typeMultiBtn.addEventListener('click', ()=>{ renderPreview(); });
 
-// Update HYDRO_ITEMS eps (Backer CI) mat_psf when user selects a board price
-function updateBackerPriceFromSelect(){
-  if (!backerSelect) return;
+function updateBacker(){
   const pricePerBoard = Number(backerSelect.value || 0);
   const pricePerSF = pricePerBoard / 32;
-  // find HYDRO_ITEMS entry with key 'eps' and update
-  const eps = HYDRO_ITEMS.find(i => i.key === 'eps');
+  const eps = HYDRO_ITEMS.find(i=>i.key==='eps');
   if (eps) eps.mat_psf = pricePerSF;
-  // recompute RATES.new totals
-  RATES.new.mat_psf = HYDRO_ITEMS.reduce((s, it) => s + (it.mat_psf || 0), 0);
-  RATES.new.lab_psf = HYDRO_ITEMS.reduce((s, it) => s + (it.lab_psf || 0), 0);
+  RATES.new.mat_psf = HYDRO_ITEMS.reduce((s,it)=>s+(it.mat_psf||0),0);
+  RATES.new.lab_psf = HYDRO_ITEMS.reduce((s,it)=>s+(it.lab_psf||0),0);
   RATES.new.inst_psf = RATES.new.mat_psf + RATES.new.lab_psf;
-  renderTotals();
 }
+backerSelect.addEventListener('change', updateBacker);
+updateBacker();
 
-// wire change handler and initialize once
-if (backerSelect){
-  backerSelect.addEventListener('change', updateBackerPriceFromSelect);
-  // set initial value based on selected option on load
-  updateBackerPriceFromSelect();
-}
-
-// HydroBlok UI-only table removed; itemized data will be included in XLSX exports only.
-
-function renderTotals(){
-  // Read inputs and respect true zero
-  let sf = Number(sfEl.value || 0);
-  if (isNaN(sf) || sf < 0) sf = 0;
-  
-  let carryCost = Number(carryCostEl.value || 0);
-  if (isNaN(carryCost) || carryCost < 0) carryCost = 0;
-  
-  const carryPct   = buildType === 'res' ? 0.18 : 0.15; // Residential 18%, Multi-family 15%
-  const carrySav   = carryCost * carryPct;
-
-  // Temporary debug logging
-  console.log('DEBUG renderTotals:', { sf, carryCost, carryPct, buildType, quoteMode });
-
-  // Traditional user-entered $/SF — source depends on mode
-  let tradMatPsf = 0, tradLabPsf = 0;
+function computeTotals(){
+  let sf = Math.max(0, Number(sfEl.value || 0));
+  let carry = Math.max(0, Number(carryEl.value || 0));
+  const carryPct = buildType === 'res' ? 0.18 : 0.15;
+  let tradMat = 0, tradLab = 0;
   if (quoteMode === 'quick'){
-    tradMatPsf = Number(tradMatPsfEl.value || 0);
-    if (isNaN(tradMatPsf) || tradMatPsf < 0) tradMatPsf = 0;
-    
-    tradLabPsf = Number(tradLabPsfEl.value || 0);
-    if (isNaN(tradLabPsf) || tradLabPsf < 0) tradLabPsf = 0;
+    tradMat = Math.max(0, Number(tradMatEl.value || 0));
+    tradLab = Math.max(0, Number(tradLabEl.value || 0));
   } else {
-    // Sum itemized fields (use explicit mapping so lab-only items are handled)
     const items = [
-      { name: 'WRB', matId: 'mat-wrb', labId: 'lab-wrb' },
-      { name: 'EPS Foam', matId: 'mat-eps', labId: 'lab-eps' },
-      { name: 'Metal Wire', matId: 'mat-wire', labId: 'lab-wire' },
-      { name: 'Fasteners', matId: 'mat-fasteners', labId: 'lab-fasteners' },
-      { name: 'Metal Trim', matId: 'mat-trim', labId: 'lab-trim' },
-      { name: 'Base Coat', matId: 'mat-base', labId: 'lab-base' },
-      { name: 'Finish Coat', matId: 'mat-finish', labId: 'lab-finish' },
-      { name: 'Bldg Prep', matId: null, labId: 'lab-prep' },
-      { name: 'Mobilization', matId: null, labId: 'lab-mobil' },
-      { name: 'Cleanup', matId: null, labId: 'lab-cleanup' }
+      { matId:'mat-wrb', labId:'lab-wrb' },
+      { matId:'mat-eps', labId:'lab-eps' },
+      { matId:'mat-wire', labId:'lab-wire' },
+      { matId:'mat-fasteners', labId:'lab-fasteners' },
+      { matId:'mat-trim', labId:'lab-trim' },
+      { matId:'mat-base', labId:'lab-base' },
+      { matId:'mat-finish', labId:'lab-finish' },
+      { matId:null, labId:'lab-prep' },
+      { matId:null, labId:'lab-mobil' },
+      { matId:null, labId:'lab-cleanup' }
     ];
-    tradMatPsf = items.reduce((s, it) => {
-      if (!it.matId) return s;
-      const el = document.getElementById(it.matId);
-      const val = el ? Number(el.value || 0) : 0;
-      return s + (isNaN(val) || val < 0 ? 0 : val);
-    }, 0);
-    tradLabPsf = items.reduce((s, it) => {
-      if (!it.labId) return s;
-      const el = document.getElementById(it.labId);
-      const val = el ? Number(el.value || 0) : 0;
-      return s + (isNaN(val) || val < 0 ? 0 : val);
-    }, 0);
+    tradMat = items.reduce((s,it)=>{ if (!it.matId) return s; const el=document.getElementById(it.matId); let v=el?Number(el.value||0):0; return s + (isNaN(v)||v<0?0:v)},0);
+    tradLab = items.reduce((s,it)=>{ if (!it.labId) return s; const el=document.getElementById(it.labId); let v=el?Number(el.value||0):0; return s + (isNaN(v)||v<0?0:v)},0);
   }
-  const tradInstPsf= tradMatPsf + tradLabPsf;
-
-  console.log('DEBUG traditional $/SF:', { tradMatPsf, tradLabPsf, tradInstPsf });
-
-  // Traditional totals (material + labor)
-  const oldMat = tradMatPsf * sf;
-  const oldLab = tradLabPsf * sf;
-  const oldTotBase = tradInstPsf * sf;
-  
-  // Add full carry cost to traditional total
-  const oldTot = oldTotBase + carryCost;
-
-  // HydroBlok totals (material + labor)
-  const newMat = RATES.new.mat_psf * sf;
-  const newLab = RATES.new.lab_psf * sf;
-  const newTotBase = RATES.new.inst_psf * sf;
-
-  console.log('DEBUG totals before carry:', { oldTotBase, newTotBase, carryCost, carryPct });
-
-  // Per-item breakdown removed — display only aggregate HydroBlok totals
-
-  // Add discounted carry cost to HydroBlok (cost minus the savings percentage)
-  const carryDiscountedForHydro = carryCost * (1 - carryPct);
-  const newTot = newTotBase + carryDiscountedForHydro;
-
-  // Comparison
-  const delta = Math.max(0, oldTot - newTot);
-  const pct   = oldTot > 0 ? ((oldTot - newTot) / oldTot) * 100 : 0; // % savings vs traditional
-
-  console.log('DEBUG final totals:', { oldTot, newTot, carryDiscountedForHydro, delta, pct });
-
-  // Per-SF notes
-  const oldPerSF   = (sf > 0) ? (oldTot / sf) : 0;
-  const newPerSF   = (sf > 0) ? (newTot / sf) : 0;           // effective per-SF with carry cost applied
-  const deltaPerSF = (sf > 0) ? ((oldTot - newTot) / sf) : 0;
-
-  console.log('DEBUG per-SF:', { oldPerSF, newPerSF, deltaPerSF });
-
-  // Render totals
-  document.getElementById('old-total').textContent = fmtUSD(oldTot);
-  document.getElementById('new-total').textContent = fmtUSD(newTot);
-  document.getElementById('old-mat').textContent   = fmtUSD(oldMat);
-  document.getElementById('old-lab').textContent   = fmtUSD(oldLab);
-  document.getElementById('new-mat').textContent   = fmtUSD(newMat);
-  document.getElementById('new-lab').textContent   = fmtUSD(newLab);
-  document.getElementById('carry-sav').textContent = `${fmtUSD(carryDiscountedForHydro)} (discounted ${(carryPct*100).toFixed(0)}%)`;
-  document.getElementById('delta').textContent     = fmtUSD(delta);
-  document.getElementById('pct').textContent       = `${pct.toFixed(1)}% savings`;
-
-  // Render per-SF notes
-  document.getElementById('old-psf').textContent   = `${fmtUSD(oldPerSF)}/SF`;
-  document.getElementById('new-psf').textContent   = `${fmtUSD(newPerSF)}/SF`;
-  document.getElementById('delta-psf').textContent = `${fmtUSD(deltaPerSF)}/SF`;
+  const oldMatTot = tradMat * sf; const oldLabTot = tradLab * sf; const oldBase = (tradMat + tradLab) * sf; const oldTot = oldBase + carry;
+  const newMatTot = RATES.new.mat_psf * sf; const newLabTot = RATES.new.lab_psf * sf; const newBase = RATES.new.inst_psf * sf; const carryDiscounted = carry * (1 - (buildType === 'res' ? 0.18 : 0.15)); const newTot = newBase + carryDiscounted;
+  const delta = Math.max(0, oldTot - newTot); const pct = oldTot>0?((oldTot-newTot)/oldTot)*100:0;
+  return { sf, carry, tradMat, tradLab, oldMatTot, oldLabTot, oldBase, oldTot, newMatTot, newLabTot, newBase, carryDiscounted, newTot, delta, pct };
 }
 
-// Submit button triggers calculation
-submitBtn.addEventListener('click', () => {
-  renderTotals();
-});
+function renderPreview(){
+  const t = computeTotals();
+  document.getElementById('old-mat').textContent = fmtUSD(t.oldMatTot);
+  document.getElementById('old-lab').textContent = fmtUSD(t.oldLabTot);
+  document.getElementById('new-mat').textContent = fmtUSD(t.newMatTot);
+  document.getElementById('new-lab').textContent = fmtUSD(t.newLabTot);
+  document.getElementById('carry-sav').textContent = `${fmtUSD(t.carryDiscounted)} (discounted ${(buildType==='res'?18:15)}%)`;
+  document.getElementById('new-total').textContent = fmtUSD(t.newTot);
+  document.getElementById('new-psf').textContent = `${fmtUSD(t.newTot/(t.sf>0?t.sf:1))}/SF`;
+  document.getElementById('delta').textContent = fmtUSD(t.delta);
+  document.getElementById('delta-psf').textContent = `${fmtUSD(t.delta/(t.sf>0?t.sf:1))}/SF`;
+  // also update extra summary fields
+  updateSummaryExtras();
+}
+ 
+ // update additional preview fields (old total, pct, old-psf)
+ function updateSummaryExtras(){
+   const t = computeTotals();
+   const oldPerSF = t.sf > 0 ? (t.oldTot / t.sf) : 0;
+   const newPerSF = t.sf > 0 ? (t.newTot / t.sf) : 0;
+   document.getElementById('old-total').textContent = fmtUSD(t.oldTot);
+   document.getElementById('old-psf').textContent = `${fmtUSD(oldPerSF)}/SF`;
+   document.getElementById('old-psf').setAttribute('title', 'Traditional cost per SF');
+   document.getElementById('pct').textContent = `${t.pct.toFixed(1)}% savings`;
+ }
 
-// Submit button on right (same function)
-document.getElementById('submit-right').addEventListener('click', () => {
-  renderTotals();
-});
+// Wire inputs for live preview
+Array.from(document.querySelectorAll('input, select')).forEach(el=>el.addEventListener('input', ()=>{ updateBacker(); renderPreview(); }));
 
 // Reset
-document.getElementById('reset').addEventListener('click', ()=>{
-  buildType = 'res';
-  typeResBtn.classList.add('active');  typeResBtn.setAttribute('aria-selected','true');
-  typeMultiBtn.classList.remove('active'); typeMultiBtn.setAttribute('aria-selected','false');
+document.getElementById('reset').addEventListener('click', ()=>{ document.querySelectorAll('input').forEach(i=>i.value=''); document.getElementById('sf').value=0; document.getElementById('carry-cost').value=0; renderPreview(); });
 
-  sfEl.value = 0;
-  carryCostEl.value = 0;
-  tradMatPsfEl.value = 0;
-  tradLabPsfEl.value = 0;
-  // clear itemized inputs as well (clear so placeholders show)
-  document.querySelectorAll('.item-mat, .item-lab').forEach(i => i.value = '');
-  renderTotals();
-});
+// wire right-side PDF button
+const createPdfRightBtn = document.getElementById('create-pdf-right');
+if (createPdfRightBtn) {
+  createPdfRightBtn.addEventListener('click', ()=>{ if (createPdfBtn) createPdfBtn.click(); });
+}
 
-// Generate Excel Quote
-document.getElementById('create-pdf').addEventListener('click', function(){
-  try {
-    const sf = Math.max(0, Number(sfEl.value || 0));
-    const carryCost = Math.max(0, Number(carryCostEl.value || 0));
-    const carryPct = buildType === 'res' ? 0.18 : 0.15;
+// (compact one-page option removed)
 
-      // Ensure Backer CI name reflects the selected board thickness
-      if (backerSelect) {
-        const eps = HYDRO_ITEMS.find(i => i.key === 'eps');
-        try {
-          const label = backerSelect.options[backerSelect.selectedIndex].text;
-          if (eps) eps.name = `Backer CI (${label})`;
-        } catch(e) { /* ignore */ }
-      }
-    
-    let tradMatPsf = 0, tradLabPsf = 0;
-    if (quoteMode === 'quick'){
-      tradMatPsf = Math.max(0, Number(tradMatPsfEl.value || 0));
-      tradLabPsf = Math.max(0, Number(tradLabPsfEl.value || 0));
-    } else {
-      const matEls = document.querySelectorAll('.item-mat');
-      const labEls = document.querySelectorAll('.item-lab');
-      tradMatPsf = Array.from(matEls).reduce((s, e) => { let val = Number(e.value || 0); return s + (isNaN(val) || val < 0 ? 0 : val); }, 0);
-      tradLabPsf = Array.from(labEls).reduce((s, e) => { let val = Number(e.value || 0); return s + (isNaN(val) || val < 0 ? 0 : val); }, 0);
-    }
-    
-    const oldMat = tradMatPsf * sf;
-    const oldLab = tradLabPsf * sf;
-    const oldTotBase = (tradMatPsf + tradLabPsf) * sf;
-    const oldTot = oldTotBase + carryCost;
-    
-    const newMat = RATES.new.mat_psf * sf;
-    const newLab = RATES.new.lab_psf * sf;
-    const newTotBase = RATES.new.inst_psf * sf;
-    const carryDiscountedForHydro = carryCost * (1 - carryPct);
-    const newTot = newTotBase + carryDiscountedForHydro;
-    
-    const delta = Math.max(0, oldTot - newTot);
-    const pct = oldTot > 0 ? ((oldTot - newTot) / oldTot) * 100 : 0;
-    
-    const perSFTrad = oldTot / (sf > 0 ? sf : 1);
-    const perSFHydro = newTot / (sf > 0 ? sf : 1);
-    
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    const quoteNum = 'QB-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
-    
-    // Collect itemized data if in itemized mode — use explicit mapping to preserve order and lab-only items
-    let itemizedRows = [['ITEMIZED MATERIALS & LABOR'], ['Item', 'Mat $/SF', 'Lab $/SF']];
-    if (quoteMode === 'itemized') {
-      const items = [
-        { name: 'WRB', matId: 'mat-wrb', labId: 'lab-wrb' },
-        { name: 'EPS Foam', matId: 'mat-eps', labId: 'lab-eps' },
-        { name: 'Metal Wire', matId: 'mat-wire', labId: 'lab-wire' },
-        { name: 'Fasteners', matId: 'mat-fasteners', labId: 'lab-fasteners' },
-        { name: 'Metal Trim', matId: 'mat-trim', labId: 'lab-trim' },
-        { name: 'Base Coat', matId: 'mat-base', labId: 'lab-base' },
-        { name: 'Finish Coat', matId: 'mat-finish', labId: 'lab-finish' },
-        { name: 'Bldg Prep', matId: null, labId: 'lab-prep' },
-        { name: 'Mobilization', matId: null, labId: 'lab-mobil' },
-        { name: 'Cleanup', matId: null, labId: 'lab-cleanup' }
-      ];
-      items.forEach(it => {
-        const mat = it.matId ? Number(document.getElementById(it.matId)?.value || 0) : '';
-        const lab = it.labId ? Number(document.getElementById(it.labId)?.value || 0) : '';
-        itemizedRows.push([it.name, mat === '' ? '' : mat, lab === '' ? '' : lab]);
-      });
-    }
-    
-    // Prevent exporting if both totals are zero
-    if ((oldTot === 0 || oldTot === 0.0) && (newTot === 0 || newTot === 0.0)) {
-      alert('Cannot export: quote totals are zero. Enter inputs and calculate before exporting.');
-      return;
-    }
+// Build printable HTML (mirrors XLSX content)
+function buildPrintableHtml(){
+  const t = computeTotals();
+  // ensure eps label reflects thickness
+  const eps = HYDRO_ITEMS.find(i=>i.key==='eps');
+  if (eps){ const label = backerSelect.options[backerSelect.selectedIndex].text; eps.name = `Backer CI (${label})`; }
 
-    // Create workbook data
-    const ws_data = [];
-    const boldRows = [];
-    
-    ws_data.push(['HydroBlok Quote - ' + sf + ' SF']);
-    boldRows.push(0);
-    // Disclaimer in sheet at D1
-    ws_data[0] = ws_data[0] || [];
-    ws_data[0][3] = 'Quote susceptible to change based on individual project requirements';
-    
-    ws_data.push([]);
-    ws_data.push(['QUOTE INFORMATION']);
-    boldRows.push(2);
-    ws_data.push(['Quote Number', quoteNum]);
-    ws_data.push(['Date', dateStr]);
-    ws_data.push(['Build Type', buildType === 'res' ? 'Residential' : 'Multi-family']);
-    ws_data.push(['Quote Mode', quoteMode === 'quick' ? 'Quick Quote' : 'Itemized Quote']);
-    
-    ws_data.push([]);
-    ws_data.push(['JOB DETAILS']);
-    boldRows.push(8);
-    ws_data.push(['Total Wall Area (SF)', sf]);
-    ws_data.push(['Projected Carry Costs', carryCost]);
-    ws_data.push(['Carry Cost Discount Rate', (carryPct*100).toFixed(0) + '%']);
-    
-    ws_data.push([]);
-    ws_data.push(['TRADITIONAL METHOD PRICING']);
-    boldRows.push(13);
-    ws_data.push(['Materials per SF', tradMatPsf]);
-    ws_data.push(['Labor per SF', tradLabPsf]);
-    ws_data.push(['Total Cost per SF', tradMatPsf + tradLabPsf]);
-    ws_data.push(['Materials Total (' + sf + ' SF)', oldMat]);
-    ws_data.push(['Labor Total (' + sf + ' SF)', oldLab]);
-    ws_data.push(['Installation Base Cost', oldTotBase]);
-    ws_data.push(['Carry Costs', carryCost]);
-    ws_data.push(['TRADITIONAL TOTAL', oldTot]);
-    boldRows.push(20);
-    ws_data.push(['Traditional Cost per SF', perSFTrad]);
-    
-    ws_data.push([]);
-    ws_data.push(['HYDROBLOK PRICING']);
-    boldRows.push(23);
-    ws_data.push(['Materials per SF', RATES.new.mat_psf]);
-    ws_data.push(['Labor per SF', RATES.new.lab_psf]);
-    ws_data.push(['Total Cost per SF', RATES.new.inst_psf]);
-    ws_data.push(['Materials Total (' + sf + ' SF)', newMat]);
-    ws_data.push(['Labor Total (' + sf + ' SF)', newLab]);
-    ws_data.push(['Installation Base Cost', newTotBase]);
-    ws_data.push(['Carry Costs (Discounted ' + (carryPct*100).toFixed(0) + '%)', carryDiscountedForHydro]);
-    ws_data.push(['HYDROBLOK TOTAL', newTot]);
-    boldRows.push(31);
-    ws_data.push(['HydroBlok Cost per SF', perSFHydro]);
-    
-    ws_data.push([]);
-    ws_data.push(['COST COMPARISON']);
-    boldRows.push(34);
-    ws_data.push(['Traditional Total Cost', oldTot]);
-    ws_data.push(['HydroBlok Total Cost', newTot]);
-    ws_data.push(['TOTAL SAVINGS', delta]);
-    boldRows.push(37);
-    ws_data.push(['Savings Percentage', pct.toFixed(1) + '%']);
-    
-    ws_data.push([]);
-    ws_data.push(['ADVANTAGES']);
-    boldRows.push(40);
-    ws_data.push(['Better resale value over time']);
-    ws_data.push(['Builders insurance savings']);
-    ws_data.push(['No lath inspections required']);
-    ws_data.push(['De-risk labor inflation costs']);
-    ws_data.push(['Shorter curing times between coats']);
-    ws_data.push(['Reduced trash haul away and project costs']);
-    ws_data.push(['Improved durability and weather resistance']);
-    
-    // Always add an itemized table on the right for XLSX (user itemized rows if present, then HydroBlok itemized)
-    // locate or create a target header row for the right-side table
-    let rightHeaderIdx = ws_data.findIndex(r => r && r[3] && String(r[3]).toString().startsWith('Itemized'));
-    if (rightHeaderIdx === -1) {
-      const quoteInfoIdx = ws_data.findIndex(r => r && r[0] && String(r[0]).startsWith('QUOTE INFORMATION'));
-      rightHeaderIdx = (quoteInfoIdx === -1) ? 8 : quoteInfoIdx + 2;
-      ws_data[rightHeaderIdx] = ws_data[rightHeaderIdx] || [];
-      ws_data[rightHeaderIdx][3] = 'Itemized';
-      ws_data[rightHeaderIdx + 1] = ws_data[rightHeaderIdx + 1] || [];
-      ws_data[rightHeaderIdx + 1][3] = 'Line Item';
-      ws_data[rightHeaderIdx + 1][4] = 'Mat $/SF';
-      ws_data[rightHeaderIdx + 1][5] = 'Lab $/SF';
-      boldRows.push(rightHeaderIdx, rightHeaderIdx + 1);
-    }
+  const userItems = [
+    { name: 'WRB', matId: 'mat-wrb', labId: 'lab-wrb' },
+    { name: 'EPS Foam', matId: 'mat-eps', labId: 'lab-eps' },
+    { name: 'Metal Wire', matId: 'mat-wire', labId: 'lab-wire' },
+    { name: 'Fasteners', matId: 'mat-fasteners', labId: 'lab-fasteners' },
+    { name: 'Metal Trim', matId: 'mat-trim', labId: 'lab-trim' },
+    { name: 'Base Coat', matId: 'mat-base', labId: 'lab-base' },
+    { name: 'Finish Coat', matId: 'mat-finish', labId: 'lab-finish' },
+    { name: 'Bldg Prep', matId: null, labId: 'lab-prep' },
+    { name: 'Mobilization', matId: null, labId: 'lab-mobil' },
+    { name: 'Cleanup', matId: null, labId: 'lab-cleanup' }
+  ];
 
-    // write any user-provided itemized rows (if in itemized mode)
-    let writeIdx = rightHeaderIdx + 2;
-    if (quoteMode === 'itemized' && itemizedRows.length > 1) {
-      for (let i = 2; i < itemizedRows.length; i++) {
-        const row = itemizedRows[i];
-        ws_data[writeIdx] = ws_data[writeIdx] || [];
-        ws_data[writeIdx][3] = row[0];
-        ws_data[writeIdx][4] = row[1];
-        ws_data[writeIdx][5] = row[2];
-        writeIdx++;
-      }
-    }
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  const quoteNum = 'QB-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
 
-    // Append HydroBlok itemized rows always
-    ws_data[writeIdx] = ws_data[writeIdx] || [];
-    ws_data[writeIdx][3] = 'HydroBlok Itemized';
-    boldRows.push(writeIdx);
-    writeIdx++;
-    ws_data[writeIdx] = ws_data[writeIdx] || [];
-    ws_data[writeIdx][3] = 'Line Item';
-    ws_data[writeIdx][4] = 'Mat $/SF';
-    ws_data[writeIdx][5] = 'Lab $/SF';
-    boldRows.push(writeIdx);
-    writeIdx++;
-    for (let h = 0; h < HYDRO_ITEMS.length; h++) {
-      const it = HYDRO_ITEMS[h];
-      ws_data[writeIdx] = ws_data[writeIdx] || [];
-      ws_data[writeIdx][3] = it.name;
-      ws_data[writeIdx][4] = typeof it.mat_psf === 'number' ? it.mat_psf : '';
-      ws_data[writeIdx][5] = typeof it.lab_psf === 'number' ? it.lab_psf : '';
-      writeIdx++;
-    }
-    
-    const ws = XLSX.utils.aoa_to_sheet(ws_data);
-    ws['!cols'] = [{ wch: 45 }, { wch: 25 }, { wch: 3 }, { wch: 30 }, { wch: 15 }, { wch: 15 }];
+  let html = '';
+  html += `<style>
+    html,body{margin:0;padding:0}
+    .pdf-wrapper{padding:12px;font-family:Arial,Helvetica,sans-serif;color:#0f172a}
+    .pdf-header{display:flex;justify-content:space-between;align-items:center}
+    .brand{color:#509E2E;font-weight:800;font-size:20px}
+    .muted{color:#64748b}
+    .pdf-two-col{display:flex;gap:18px}
+    .pdf-col{flex:1;min-width:0}
+    h3{margin:6px 0}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{padding:6px;border:1px solid #eaeef0;font-size:11pt}
+    th{background:#f8fafc;text-align:left}
+    .right{text-align:right}
+    .badge{display:inline-block;background:#dcfce7;color:#065f46;border:1px solid #bbf7d0;padding:4px 8px;border-radius:999px;font-weight:700}
+    .new-price{color:#509E2E;font-weight:800;font-size:22px}
+  </style>`;
 
-    // Format monetary cells with currency number format (up to 5 decimal places, no trailing zeros)
-    const moneyFormat = '$#,##0.#####';
-    const moneyKeywords = ['cost', 'total', 'materials', 'labor', 'carry', 'savings', 'mat $/sf', 'lab $/sf', 'per sf'];
-    for (let r = 0; r < ws_data.length; r++) {
-      const row = ws_data[r] || [];
-      const label = (row[0] || '').toString().toLowerCase();
-      // Column 1: many values live here (format when the label implies money)
-      if (typeof row[1] === 'number') {
-        if (moneyKeywords.some(k => label.indexOf(k) !== -1) || /total|cost|carry|materials|labor|savings/i.test(label)) {
-          const cellRef = XLSX.utils.encode_col(1) + (r + 1);
-          if (!ws[cellRef]) ws[cellRef] = {};
-          ws[cellRef].t = 'n';
-          ws[cellRef].v = Number(row[1]);
-          ws[cellRef].z = moneyFormat;
-        }
-      }
-      // Right-hand itemized columns (4 and 5) — always format numeric entries as money
-      [4,5].forEach(col => {
-        if (typeof row[col] === 'number') {
-          const cellRef = XLSX.utils.encode_col(col) + (r + 1);
-          if (!ws[cellRef]) ws[cellRef] = {};
-          ws[cellRef].t = 'n';
-          ws[cellRef].v = Number(row[col]);
-          ws[cellRef].z = moneyFormat;
-        }
-      });
-    }
+  html += '<div class="pdf-wrapper">';
+  html += `<div class="pdf-header"><div><div class="brand">HydroBlok</div><div class="muted">Quote</div></div><div style="text-align:right"><div>${dateStr}</div><div>${quoteNum}</div></div></div>`;
+  html += `<p class="muted" style="margin-top:6px">Quote susceptible to change based on individual project requirements</p>`;
 
-    // Apply bold formatting to headers and totals
-    boldRows.forEach(rowIdx => {
-      [0, 1, 3, 4, 5].forEach(colIdx => {
-        if (ws_data[rowIdx] && ws_data[rowIdx][colIdx] !== undefined && ws_data[rowIdx][colIdx] !== null) {
-          const cellRef = XLSX.utils.encode_col(colIdx) + (rowIdx + 1);
-          if (!ws[cellRef]) ws[cellRef] = {};
-          if (!ws[cellRef].s) ws[cellRef].s = {};
-          ws[cellRef].s.font = Object.assign({}, ws[cellRef].s.font, { bold: true });
-        }
-      });
+  let left = '';
+  left += '<h3>Job Details</h3>';
+  left += '<table><tbody>';
+  left += `<tr><td>Total Wall Area (SF)</td><td class="right">${t.sf}</td></tr>`;
+  left += `<tr><td>Projected Carry Costs</td><td class="right">${fmtUSD(t.carry)}</td></tr>`;
+  left += `<tr><td>Carry Cost Discount Rate</td><td class="right">${buildType==='res'? '18%':'15%'}</td></tr>`;
+  left += `<tr><td>Build Type</td><td class="right">${buildType==='res'?'Residential':'Multi-family'}</td></tr>`;
+  left += `<tr><td>Quote Mode</td><td class="right">${quoteMode==='quick'?'Quick Quote':'Itemized Quote'}</td></tr>`;
+  left += '</tbody></table>';
+
+  left += '<h3>Traditional Method Pricing</h3>';
+  left += '<table><thead><tr><th>Item</th><th class="right">Value</th></tr></thead><tbody>';
+  left += `<tr><td>Materials per SF</td><td class="right">${fmtUSD(t.tradMat)}</td></tr>`;
+  left += `<tr><td>Labor per SF</td><td class="right">${fmtUSD(t.tradLab)}</td></tr>`;
+  left += `<tr><td>Total Cost per SF</td><td class="right">${fmtUSD(t.tradMat + t.tradLab)}</td></tr>`;
+  left += `<tr><td>Materials Total (${t.sf} SF)</td><td class="right">${fmtUSD(t.oldMatTot)}</td></tr>`;
+  left += `<tr><td>Labor Total (${t.sf} SF)</td><td class="right">${fmtUSD(t.oldLabTot)}</td></tr>`;
+  left += `<tr><td>Installation Base Cost</td><td class="right">${fmtUSD(t.oldBase)}</td></tr>`;
+  left += `<tr><td>Carry Costs</td><td class="right">${fmtUSD(t.carry)}</td></tr>`;
+  left += `<tr><th>TRADITIONAL TOTAL</th><th class="right">${fmtUSD(t.oldTot)}</th></tr>`;
+  left += `<tr><td>Traditional Cost per SF</td><td class="right">${fmtUSD(t.oldTot/(t.sf>0?t.sf:1))}</td></tr>`;
+  left += '</tbody></table>';
+
+  left += '<h3>HydroBlok Pricing</h3>';
+  left += '<table><thead><tr><th>Item</th><th class="right">Value</th></tr></thead><tbody>';
+  left += `<tr><td>Materials per SF</td><td class="right">${fmtUSD(RATES.new.mat_psf)}</td></tr>`;
+  left += `<tr><td>Labor per SF</td><td class="right">${fmtUSD(RATES.new.lab_psf)}</td></tr>`;
+  left += `<tr><td>Total Cost per SF</td><td class="right">${fmtUSD(RATES.new.inst_psf)}</td></tr>`;
+  left += `<tr><td>Materials Total (${t.sf} SF)</td><td class="right">${fmtUSD(t.newMatTot)}</td></tr>`;
+  left += `<tr><td>Labor Total (${t.sf} SF)</td><td class="right">${fmtUSD(t.newLabTot)}</td></tr>`;
+  left += `<tr><td>Installation Base Cost</td><td class="right">${fmtUSD(t.newBase)}</td></tr>`;
+  left += `<tr><td>Carry Costs (Discounted)</td><td class="right">${fmtUSD(t.carryDiscounted)}</td></tr>`;
+  left += `<tr><th>HYDROBLOK TOTAL</th><th class="right">${fmtUSD(t.newTot)}</th></tr>`;
+  left += `<tr><td>HydroBlok Cost per SF</td><td class="right">${fmtUSD(t.newTot/(t.sf>0?t.sf:1))}</td></tr>`;
+  left += '</tbody></table>';
+
+  left += '<h3>Cost Comparison</h3>';
+  left += '<table><tbody>';
+  left += `<tr><td>Traditional Total Cost</td><td class="right">${fmtUSD(t.oldTot)}</td></tr>`;
+  left += `<tr><td>HydroBlok Total Cost</td><td class="right">${fmtUSD(t.newTot)}</td></tr>`;
+  left += `<tr><th>TOTAL SAVINGS</th><th class="right">${fmtUSD(t.delta)}</th></tr>`;
+  left += `<tr><td>Savings Percentage</td><td class="right">${t.pct.toFixed(1)}%</td></tr>`;
+  left += '</tbody></table>';
+
+  let right = '';
+  if (quoteMode === 'itemized'){
+    right += '<h3>Itemized: Provided by User</h3>';
+    right += '<table><thead><tr><th>Line Item</th><th class="right">Mat $/SF</th><th class="right">Lab $/SF</th></tr></thead><tbody>';
+    userItems.forEach(it=>{
+      const mat = it.matId?document.getElementById(it.matId).value:'';
+      const lab = it.labId?document.getElementById(it.labId).value:'';
+      right += `<tr><td>${it.name}</td><td class="right">${mat!==''?fmtUSD(Number(mat)):''}</td><td class="right">${lab!==''?fmtUSD(Number(lab)):''}</td></tr>`;
     });
-    
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Quote');
-    const sfStr = Number.isInteger(sf) ? String(sf) : String(sf).replace('.', '_');
-    const filename = 'HydroBlok-Quote-' + sfStr + 'SF-' + quoteNum + '.xlsx';
-    XLSX.writeFile(wb, filename);
-    
-  } catch(e) {
-    console.error('Export error:', e);
-    alert('Error generating export: ' + e.message);
+    right += '</tbody></table>';
   }
+
+  right += '<h3>HydroBlok Itemized</h3>';
+  right += '<table><thead><tr><th>Line Item</th><th class="right">Mat $/SF</th><th class="right">Lab $/SF</th></tr></thead><tbody>';
+  HYDRO_ITEMS.forEach(it=>{
+    right += `<tr><td>${it.name}</td><td class="right">${typeof it.mat_psf==='number'?fmtUSD(it.mat_psf):''}</td><td class="right">${typeof it.lab_psf==='number'?fmtUSD(it.lab_psf):''}</td></tr>`;
+  });
+  right += '</tbody></table>';
+
+  right += '<h3>Advantages</h3>';
+  right += '<ul>';
+  right += '<li>Better resale value over time</li>';
+  right += '<li>Builders insurance savings</li>';
+  right += '<li>No lath inspections required</li>';
+  right += '<li>De-risk labor inflation costs</li>';
+  right += '<li>Shorter curing times between coats</li>';
+  right += '<li>Reduced trash haul away and project costs</li>';
+  right += '<li>Improved durability and weather resistance</li>';
+  right += '</ul>';
+
+  html += '<div class="pdf-two-col">';
+  html += `<div class="pdf-col">${left}</div>`;
+  html += `<div class="pdf-col">${right}</div>`;
+  html += '</div>';
+
+  html += '<p style="margin-top:12px;color:#64748b">Generated by Instant Quote Calculator</p>';
+  html += '</div>';
+  return html;
+}
+
+// PDF export handler
+createPdfBtn.addEventListener('click', async ()=>{
+  try {
+    const t = computeTotals();
+    if (t.oldTot === 0 && t.newTot === 0){ alert('Cannot export: quote totals are zero. Enter inputs and calculate before exporting.'); return; }
+    const html = buildPrintableHtml();
+    const container = document.getElementById('pdf-content');
+    container.innerHTML = html;
+    // Make sure container is visible and has a printable width so html2pdf can capture it
+    container.style.display = 'block';
+    container.style.maxWidth = '760px';
+    container.style.margin = '0 auto';
+    container.style.background = '#ffffff';
+    container.style.padding = '18px';
+    container.style.boxSizing = 'border-box';
+    // scroll into view to ensure rendering in some browsers
+    try { container.scrollIntoView(); } catch(e){}
+    // tiny delay to allow browser to layout injected HTML
+    await new Promise(res => setTimeout(res, 200));
+    console.log('PDF container HTML length:', container.innerHTML.length);
+    if (!container.innerHTML || container.innerHTML.trim().length === 0) { alert('PDF content empty — aborting export.'); container.style.display='none'; return; }
+
+    const now = new Date();
+    const quoteNum = 'QB-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+    const sf = Math.max(0, Number(sfEl.value || 0));
+    const sfStr = Number.isInteger(sf) ? String(sf) : String(sf).replace('.', '_');
+    const filename = 'HydroBlok-Quote-' + sfStr + 'SF-' + quoteNum + '.pdf';
+
+    // Render container to canvas and scale to a single PDF page (two-column printable layout)
+    try {
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 12;
+      const availW = pageWidth - margin * 2;
+      const availH = pageHeight - margin * 2;
+      const pxPerPt = canvas.width / availW;
+      const imgHeightPt = canvas.height / pxPerPt;
+      let drawW = availW;
+      let drawH = imgHeightPt;
+      // scale down if needed to fit a single page
+      if (imgHeightPt > availH) {
+        const scale = availH / imgHeightPt;
+        drawW = availW * scale;
+        drawH = availH;
+      }
+      const x = margin + ((availW - drawW) / 2);
+      const y = margin + ((availH - drawH) / 2);
+      pdf.addImage(imgData, 'JPEG', x, y, drawW, drawH);
+      pdf.save(filename);
+    } catch(errCanvas){
+      console.error('canvas->PDF error', errCanvas);
+      // fallback to html2pdf if canvas approach fails
+      const opt = {
+        margin: 12,
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.92 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'pt', format: 'letter', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      };
+      await html2pdf().set(opt).from(container).save();
+    }
+    // cleanup
+    container.style.display = 'none';
+    container.innerHTML = '';
+
+    // cleanup (for success path above canvas->PDF already saved)
+    container.style.display = 'none';
+    container.innerHTML = '';
+  } catch(e){ console.error('PDF export error', e); alert('Error generating PDF: '+ (e && e.message ? e.message : e)); }
 });
 
-// Initialize with true zero
-renderTotals();
+// initial render
+renderPreview();
 </script>
 </body>
 </html>
