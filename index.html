@@ -49,6 +49,17 @@
   .right{text-align:right}
   .keypoints{display:grid;grid-template-columns:1fr 1fr;gap:6px;list-style:disc;padding-left:18px;margin-top:6px}
   .keypoints li{margin:4px 0;font-size:0.7rem;color:#94a3b8}
+  /* remove number input arrows for cleaner numeric entry */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+  input[type="number"]{
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 </style>
 </head>
 <body>
@@ -77,12 +88,12 @@
           <div style="margin-top:10px">
             <label class="label">Backer CI board thickness</label>
             <select id="backer-thickness">
-              <option value="51.25">1/2"(R-2.5)</option>
-              <option value="66.25">3/4"(R-3.75)</option>
-              <option value="81.25" selected>1"(R-5)</option>
-              <option value="106.25">1-1/2"(R-7.5)</option>
-              <option value="127.50">2"(R-10)</option>
-              <option value="147.50">2-1/2"(R-12.5)</option>
+              <option value="64.06">1/2"</option>
+              <option value="82.81">5/8"</option>
+              <option value="101.56" selected>1"</option>
+              <option value="132.81">1-1/2"</option>
+              <option value="159.38">2"</option>
+              <option value="184.38">2-1/2"</option>
             </select>
             <div class="muted">Based on a 4 x 8 board.</div>
           </div>
@@ -111,11 +122,11 @@
               <div class="item-pair"><input class="item-mat" id="mat-wrb" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-wrb" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
-              <label class="label">EPS Foam</label>
+              <label class="label">continuous insulation</label>
               <div class="item-pair"><input class="item-mat" id="mat-eps" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-eps" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
-              <label class="label">Metal Wire</label>
+              <label class="label">Metal Lath</label>
               <div class="item-pair"><input class="item-mat" id="mat-wire" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-wire" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
@@ -123,7 +134,7 @@
               <div class="item-pair"><input class="item-mat" id="mat-fasteners" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-fasteners" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
-              <label class="label">Metal Trim</label>
+              <label class="label">Metal Trim(J-Mold, Weep screed, corner bead)</label>
               <div class="item-pair"><input class="item-mat" id="mat-trim" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-trim" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
@@ -135,15 +146,15 @@
               <div class="item-pair"><input class="item-mat" id="mat-finish" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-finish" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
-              <label class="label">Bldg Prep (lab-only)</label>
-              <div class="item-pair"><input class="item-lab" id="lab-prep" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
+              <label class="label">Bldg Prep (Tape/Film)</label>
+              <div class="item-pair"><input class="item-mat" id="mat-finish" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-finish" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
-              <label class="label">Mobilization (lab-only)</label>
+              <label class="label">Mobilization</label>
               <div class="item-pair"><input class="item-lab" id="lab-mobil" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
-              <label class="label">Cleanup (lab-only)</label>
+              <label class="label">Cleanup</label>
               <div class="item-pair"><input class="item-lab" id="lab-cleanup" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
           </div>
@@ -189,7 +200,7 @@
             <div class="row2"><span>Traditional labor</span><strong id="old-lab">$0.00</strong></div>
             <div class="row2"><span>HydroBlok materials</span><strong id="new-mat">$0.00</strong></div>
             <div class="row2"><span>HydroBlok labor</span><strong id="new-lab">$0.00</strong></div>
-            <div class="row2"><span>Hydroblok Carry cost</span><strong id="carry-sav">$0.00 (18%)</strong></div>
+            <div class="row2"><span>Projected Carry Cost</span><strong id="carry-sav">$0.00 (18%)</strong></div>
             <div class="row2" style="border-top:1px solid #e5e7eb;padding-top:8px">
               <span>Savings vs traditional</span>
               <div style="display:flex;flex-direction:column;align-items:flex-end">
@@ -199,6 +210,7 @@
             </div>
             <div style="margin-top:12px;display:flex;gap:8px;flex-direction:column;align-items:flex-start">
               <button class="btn primary" id="create-pdf-right">Download PDF Quote</button>
+              <p class="muted" style="margin-top:6px;font-size:0.9rem">*Carry cost discounted based on project time savings</p>
               <p class="muted" style="margin-top:8px">Quote susceptible to change based on individual project requirements</p>
             </div>
           </div>
@@ -308,7 +320,7 @@ function renderPreview(){
   document.getElementById('old-lab').textContent = fmtUSD(t.oldLabTot);
   document.getElementById('new-mat').textContent = fmtUSD(t.newMatTot);
   document.getElementById('new-lab').textContent = fmtUSD(t.newLabTot);
-  document.getElementById('carry-sav').textContent = `${fmtUSD(t.carryDiscounted)} (discounted ${(buildType==='res'?18:15)}%)`;
+  document.getElementById('carry-sav').textContent = `${fmtUSD(t.carryDiscounted)} (*discounted ${(buildType==='res'?18:15)}%)`;
   document.getElementById('new-total').textContent = fmtUSD(t.newTot);
   document.getElementById('new-psf').textContent = `${fmtUSD(t.newTot/(t.sf>0?t.sf:1))}/SF`;
   document.getElementById('delta').textContent = fmtUSD(t.delta);
@@ -351,8 +363,8 @@ function buildPrintableHtml(){
 
   const userItems = [
     { name: 'WRB', matId: 'mat-wrb', labId: 'lab-wrb' },
-    { name: 'EPS Foam', matId: 'mat-eps', labId: 'lab-eps' },
-    { name: 'Metal Wire', matId: 'mat-wire', labId: 'lab-wire' },
+    { name: 'continuous insulation', matId: 'mat-eps', labId: 'lab-eps' },
+    { name: 'Metal Lath', matId: 'mat-wire', labId: 'lab-wire' },
     { name: 'Fasteners', matId: 'mat-fasteners', labId: 'lab-fasteners' },
     { name: 'Metal Trim', matId: 'mat-trim', labId: 'lab-trim' },
     { name: 'Base Coat', matId: 'mat-base', labId: 'lab-base' },
@@ -397,7 +409,7 @@ function buildPrintableHtml(){
   left += '<table><tbody>';
   left += `<tr><td>Total Wall Area (SF)</td><td class="right">${t.sf}</td></tr>`;
   left += `<tr><td>Projected Carry Costs</td><td class="right">${fmtUSD(t.carry)}</td></tr>`;
-  left += `<tr><td>Carry Cost Discount Rate</td><td class="right">${buildType==='res'? '18%':'15%'}</td></tr>`;
+  left += `<tr><td>Carry Cost Discount Rate</td><td class="right">${buildType==='res'? '*18%':'*15%'}</td></tr>`;
   left += `<tr><td>Build Type</td><td class="right">${buildType==='res'?'Residential':'Multi-family'}</td></tr>`;
   left += `<tr><td>Quote Mode</td><td class="right">${quoteMode==='quick'?'Quick Quote':'Itemized Quote'}</td></tr>`;
   left += '</tbody></table>';
@@ -423,7 +435,7 @@ function buildPrintableHtml(){
   left += `<tr><td>Materials Total (${t.sf} SF)</td><td class="right">${fmtUSD(t.newMatTot)}</td></tr>`;
   left += `<tr><td>Labor Total (${t.sf} SF)</td><td class="right">${fmtUSD(t.newLabTot)}</td></tr>`;
   left += `<tr><td>Installation Base Cost</td><td class="right">${fmtUSD(t.newBase)}</td></tr>`;
-  left += `<tr><td>Carry Costs (Discounted)</td><td class="right">${fmtUSD(t.carryDiscounted)}</td></tr>`;
+  left += `<tr><td>*Carry Costs (Discounted)</td><td class="right">${fmtUSD(t.carryDiscounted)}</td></tr>`;
   left += `<tr><th>HYDROBLOK TOTAL</th><th class="right">${fmtUSD(t.newTot)}</th></tr>`;
   left += `<tr><td>HydroBlok Cost per SF</td><td class="right">${fmtUSD(t.newTot/(t.sf>0?t.sf:1))}</td></tr>`;
   left += '</tbody></table>';
@@ -471,6 +483,7 @@ function buildPrintableHtml(){
   html += `<div class="pdf-col">${right}</div>`;
   html += '</div>';
 
+  html += '<p style="margin-top:8px;color:#64748b;font-size:10px">*Carry cost discounted based on project time savings</p>';
   html += '<p style="margin-top:12px;color:#64748b">Generated by Instant Quote Calculator</p>';
   html += '</div>';
   return html;
@@ -557,5 +570,3 @@ renderPreview();
 </script>
 </body>
 </html>
-
-
