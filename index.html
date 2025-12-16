@@ -110,7 +110,7 @@
           </div>
 
           <div style="margin-top:10px">
-            <label class="label">Total projected carry costs (USD)</label>
+            <label class="label">Current Total Carrying costs (USD)</label>
             <input id="carry-cost" type="number" min="0" step="0.00001" value="0" />
           </div>
 
@@ -208,7 +208,7 @@
             <div class="row2"><span>Traditional Labor</span><strong id="old-lab">$0.00</strong></div>
             <div class="row2"><span>HydroBlok Materials</span><strong id="new-mat">$0.00</strong></div>
             <div class="row2"><span>HydroBlok labor</span><strong id="new-lab">$0.00</strong></div>
-            <div class="row2"><span>Traditional Carry Cost</span><strong id="trad-carry">$0.00</strong></div>
+            <div class="row2"><span>Traditional Carrying Cost</span><strong id="trad-carry">$0.00</strong></div>
             <div class="row2"><span>Carrying Cost Savings</span><strong id="carry-savings"></strong></div>
             <div class="row2" style="border-top:1px solid #e5e7eb;padding-top:8px">
               <span>Savings vs traditional</span>
@@ -334,8 +334,8 @@ function renderPreview(){
   document.getElementById('new-psf').textContent = `${fmtUSD(t.newTot/(t.sf>0?t.sf:1))}/SF`;
   // traditional carry cost (user input)
   const tradCarryEl = document.getElementById('trad-carry'); if (tradCarryEl) tradCarryEl.textContent = fmtUSD(t.carry);
-  // carrying cost savings = traditional carry - discounted carry
-  const carrySavings = Math.max(0, t.carry - t.carryDiscounted);
+  // carrying cost savings (show as negative number to indicate savings)
+  const carrySavings = -Math.max(0, t.carry - t.carryDiscounted);
   const carrySavEl = document.getElementById('carry-savings'); if (carrySavEl) carrySavEl.innerHTML = `<span class="carry-note">*savings ${discPct}%</span>${fmtUSD(carrySavings)}`;
   const carrySavPsfEl = document.getElementById('carry-savings-psf'); if (carrySavPsfEl) carrySavPsfEl.textContent = `${fmtUSD(carrySavings/(t.sf>0?t.sf:1))}/SF`;
   // also update extra summary fields
@@ -351,6 +351,9 @@ function renderPreview(){
    document.getElementById('old-psf').textContent = `${fmtUSD(oldPerSF)}/SF`;
    document.getElementById('old-psf').setAttribute('title', 'Traditional cost per SF');
    document.getElementById('pct').textContent = `${t.pct.toFixed(1)}% savings`;
+  // update summary delta (savings vs traditional)
+  const deltaEl = document.getElementById('delta'); if (deltaEl) deltaEl.textContent = fmtUSD(t.delta);
+  const deltaPsfEl = document.getElementById('delta-psf'); if (deltaPsfEl) deltaPsfEl.textContent = `${fmtUSD(t.sf>0? (t.delta / t.sf) : 0)}/SF`;
  }
 
 // Wire inputs for live preview
