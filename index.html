@@ -9,16 +9,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link href="https://db.onlinewebfonts.com/c/757ff6da05e4f945c71c9751b485a9ad?family=Aeonik+Medium" rel="stylesheet">
+<link href="https://db.onlinewebfonts.com/c/8f2a9d487bbbc60974cd132fc3a63862?family=Aeonik+Regular" rel="stylesheet">
 <style>
   /* reuse calculator styles (compact) */
-  body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#fff;color:#0f172a}
+  body{font-family:"Aeonik Regular",Arial,Helvetica,sans-serif;margin:0;background:#fff;color:#0f172a}
   .shell{max-width:980px;margin:20px auto;padding:10px}
   .box{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
   .hero{padding:16px;border-bottom:1px solid #e5e7eb}
+  .hero h1{font-family:"Aeonik Medium";font-weight:500;text-transform:capitalize}
   .grid{display:grid;grid-template-columns:1.05fr .95fr}
   @media (max-width:880px){.grid{grid-template-columns:1fr}}
   .pane{padding:14px}
-  .label{font-weight:600;margin-bottom:6px;display:block}
+  .label{font-family:"Aeonik Medium";font-weight:500;margin-bottom:6px;display:block;text-transform:capitalize}
   input[type="number"], select{padding:8px 10px;border-radius:8px;border:1px solid #e5e7eb;width:100%}
   .seg{display:flex;background:#f8fafc;border-radius:999px;padding:4px}
   .seg button{flex:1;border:0;background:transparent;padding:8px 12px;border-radius:999px;cursor:pointer}
@@ -29,8 +32,9 @@
   .btn{padding:10px 12px;border-radius:8px;border:1px solid #e5e7eb;cursor:pointer}
   .btn.primary{background:#509E2E;color:#fff;border-color:#407E25}
   .muted{color:#64748b;font-size:0.9rem}
+  .label-desc{font-size:0.8rem;color:#94a3b8;margin-left:6px}
   /* Branding & summary styles (match calculator) */
-  .section-label{font-weight:700;color:#334155;margin-bottom:8px}
+  .section-label{font-family:"Aeonik Medium";font-weight:500;color:#334155;margin-bottom:8px;text-transform:capitalize}
   .old-price{color:#94a3b8;text-decoration:line-through;font-size:1rem}
   .new-price{color:var(--primary,#509E2E);font-weight:800;font-size:1.6rem}
   /* larger primary total */
@@ -39,6 +43,7 @@
   .breakdown{margin-top:10px;display:grid;gap:6px}
   .row2{display:flex;justify-content:space-between}
   .psf{display:block;font-size:.85rem;color:#94a3b8}
+  .carry-note{font-size:0.65rem;color:#9CA3AF;margin-right:6px;vertical-align:middle}
   /* printable container styling */
   #pdf-content{display:none;padding:24px;color:#0f172a}
   .pdf-header{display:flex;justify-content:space-between;align-items:center}
@@ -66,11 +71,12 @@
   <div class="shell">
     <div class="box">
       <div class="hero">
-        <h1>Instant Quote Calculator</h1>
-        <p class="muted">Enter the pricing for your current solution and get an instant comparison</p>
+        <h1>See How Much You Could Save on Your Next Project</h1>
+        <p class="muted">Compare your current costs with HydroBlok and get an instant estimate.</p>
       </div>
       <div class="grid">
         <div class="pane">
+          <p class="muted" style="margin-bottom:8px">Enter a few numbers below — we’ll calculate your savings and give you a downloadable quote you can share.</p>
           <label class="label">Quote Mode</label>
           <div class="seg" role="tablist">
             <button id="mode-quick" class="active">Quick Quote</button>
@@ -134,7 +140,7 @@
               <div class="item-pair"><input class="item-mat" id="mat-fasteners" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-fasteners" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
-              <label class="label">Metal Trim(J-Mold, Weep screed, corner bead)</label>
+              <label class="label">Metal Trim <span class="label-desc">(J-Mold, Weep screed, corner bead)</span></label>
               <div class="item-pair"><input class="item-mat" id="mat-trim" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-trim" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
@@ -146,7 +152,7 @@
               <div class="item-pair"><input class="item-mat" id="mat-finish" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-finish" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
-              <label class="label">Bldg Prep (Tape/Film)</label>
+              <label class="label">Bldg Prep <span class="label-desc">(Tape/Film)</span></label>
               <div class="item-pair"><input class="item-mat" id="mat-finish" placeholder="Mat $/SF" type="number" step="0.00001" /><input class="item-lab" id="lab-finish" placeholder="Lab $/SF" type="number" step="0.00001" /></div>
             </div>
             <div style="margin-top:8px">
@@ -177,11 +183,13 @@
           </div>
 
           <div class="actions">
-            <button class="btn primary" id="create-pdf" style="display:none">Download PDF Quote</button>
+            <button class="btn primary" id="create-pdf" style="display:none">Download PDF Detail</button>
           </div>
         </div>
 
         <div class="pane" id="preview">
+          <div class="section-label">Your Estimated Cost Comparison</div>
+          <p class="muted">Based on industry benchmarks and your inputs.</p>
           <div class="section-label">Traditional Methods:</div>
           <div class="price-row" style="display:flex;align-items:center;gap:12px;">
             <span class="old-price" id="old-total">$0.00</span>
@@ -196,11 +204,12 @@
           </div>
 
           <div class="breakdown" style="margin-top:10px">
-            <div class="row2"><span>Traditional materials</span><strong id="old-mat">$0.00</strong></div>
-            <div class="row2"><span>Traditional labor</span><strong id="old-lab">$0.00</strong></div>
-            <div class="row2"><span>HydroBlok materials</span><strong id="new-mat">$0.00</strong></div>
+            <div class="row2"><span>Traditional Materials</span><strong id="old-mat">$0.00</strong></div>
+            <div class="row2"><span>Traditional Labor</span><strong id="old-lab">$0.00</strong></div>
+            <div class="row2"><span>HydroBlok Materials</span><strong id="new-mat">$0.00</strong></div>
             <div class="row2"><span>HydroBlok labor</span><strong id="new-lab">$0.00</strong></div>
-            <div class="row2"><span>Projected Carry Cost</span><strong id="carry-sav">$0.00 (18%)</strong></div>
+            <div class="row2"><span>Traditional Carry Cost</span><strong id="trad-carry">$0.00</strong></div>
+            <div class="row2"><span>Carrying Cost Savings</span><strong id="carry-savings"></strong></div>
             <div class="row2" style="border-top:1px solid #e5e7eb;padding-top:8px">
               <span>Savings vs traditional</span>
               <div style="display:flex;flex-direction:column;align-items:flex-end">
@@ -210,7 +219,7 @@
             </div>
             <div style="margin-top:12px;display:flex;gap:8px;flex-direction:column;align-items:flex-start">
               <button class="btn primary" id="create-pdf-right">Download PDF Quote</button>
-              <p class="muted" style="margin-top:6px;font-size:0.9rem">*Carry cost discounted based on project time savings</p>
+              <p class="muted" style="margin-top:6px;font-size:0.9rem">*Carry cost Savings Calculated with average time saved using Hydroblok compared to traditional systems.</p>
               <p class="muted" style="margin-top:8px">Quote susceptible to change based on individual project requirements</p>
             </div>
           </div>
@@ -233,7 +242,7 @@ const HYDRO_ITEMS = [
   { name: 'HB Base', key: 'base', mat_psf: 0.33, lab_psf: 1.00 },
   { name: 'Stucco Mesh', key: 'mesh', mat_psf: 0.19, lab_psf: 0.15 },
   { name: 'Acrylic Finish', key: 'finish', mat_psf: 0.58, lab_psf: 1.00 },
-  { name: 'Bldg Prep', key: 'prep', mat_psf: 0.00, lab_psf: 0.20 },
+  { name: 'Bldg Prep', key: 'prep', mat_psf: 0.35, lab_psf: 0.20 },
   { name: 'Mobilization', key: 'mobil', mat_psf: 0.00, lab_psf: 0.05 },
   { name: 'Cleanup', key: 'cleanup', mat_psf: 0.00, lab_psf: 0.05 }
 ];
@@ -320,11 +329,15 @@ function renderPreview(){
   document.getElementById('old-lab').textContent = fmtUSD(t.oldLabTot);
   document.getElementById('new-mat').textContent = fmtUSD(t.newMatTot);
   document.getElementById('new-lab').textContent = fmtUSD(t.newLabTot);
-  document.getElementById('carry-sav').textContent = `${fmtUSD(t.carryDiscounted)} (*discounted ${(buildType==='res'?18:15)}%)`;
+  const discPct = (buildType==='res'?18:15);
   document.getElementById('new-total').textContent = fmtUSD(t.newTot);
   document.getElementById('new-psf').textContent = `${fmtUSD(t.newTot/(t.sf>0?t.sf:1))}/SF`;
-  document.getElementById('delta').textContent = fmtUSD(t.delta);
-  document.getElementById('delta-psf').textContent = `${fmtUSD(t.delta/(t.sf>0?t.sf:1))}/SF`;
+  // traditional carry cost (user input)
+  const tradCarryEl = document.getElementById('trad-carry'); if (tradCarryEl) tradCarryEl.textContent = fmtUSD(t.carry);
+  // carrying cost savings = traditional carry - discounted carry
+  const carrySavings = Math.max(0, t.carry - t.carryDiscounted);
+  const carrySavEl = document.getElementById('carry-savings'); if (carrySavEl) carrySavEl.innerHTML = `<span class="carry-note">*savings ${discPct}%</span>${fmtUSD(carrySavings)}`;
+  const carrySavPsfEl = document.getElementById('carry-savings-psf'); if (carrySavPsfEl) carrySavPsfEl.textContent = `${fmtUSD(carrySavings/(t.sf>0?t.sf:1))}/SF`;
   // also update extra summary fields
   updateSummaryExtras();
 }
@@ -381,14 +394,14 @@ function buildPrintableHtml(){
   let html = '';
   html += `<style>
     html,body{margin:0;padding:0}
-    .pdf-wrapper{padding:12px;font-family:Arial,Helvetica,sans-serif;color:#0f172a}
+    .pdf-wrapper{padding:12px;font-family:"Aeonik Regular",Arial,Helvetica,sans-serif;color:#0f172a}
     .pdf-header{display:flex;justify-content:space-between;align-items:center}
     .brand{color:#509E2E;font-weight:800;font-size:20px}
     .logo-img{height:48px;object-fit:contain}
     .muted{color:#64748b}
     .pdf-two-col{display:flex;gap:18px}
     .pdf-col{flex:1;min-width:0}
-    h3{margin:6px 0}
+    h3{margin:6px 0; font-family:"Aeonik Medium"; font-weight:500;text-transform:capitalize}
     table{width:100%;border-collapse:collapse;margin-top:8px}
     th,td{padding:6px;border:1px solid #eaeef0;font-size:11pt}
     th{background:#f8fafc;text-align:left}
@@ -409,7 +422,7 @@ function buildPrintableHtml(){
   left += '<table><tbody>';
   left += `<tr><td>Total Wall Area (SF)</td><td class="right">${t.sf}</td></tr>`;
   left += `<tr><td>Projected Carry Costs</td><td class="right">${fmtUSD(t.carry)}</td></tr>`;
-  left += `<tr><td>Carry Cost Discount Rate</td><td class="right">${buildType==='res'? '*18%':'*15%'}</td></tr>`;
+  left += `<tr><td>Carry Cost Savings Rate</td><td class="right">${buildType==='res'? '*18%':'*15%'}</td></tr>`;
   left += `<tr><td>Build Type</td><td class="right">${buildType==='res'?'Residential':'Multi-family'}</td></tr>`;
   left += `<tr><td>Quote Mode</td><td class="right">${quoteMode==='quick'?'Quick Quote':'Itemized Quote'}</td></tr>`;
   left += '</tbody></table>';
@@ -435,7 +448,7 @@ function buildPrintableHtml(){
   left += `<tr><td>Materials Total (${t.sf} SF)</td><td class="right">${fmtUSD(t.newMatTot)}</td></tr>`;
   left += `<tr><td>Labor Total (${t.sf} SF)</td><td class="right">${fmtUSD(t.newLabTot)}</td></tr>`;
   left += `<tr><td>Installation Base Cost</td><td class="right">${fmtUSD(t.newBase)}</td></tr>`;
-  left += `<tr><td>*Carry Costs (Discounted)</td><td class="right">${fmtUSD(t.carryDiscounted)}</td></tr>`;
+  left += `<tr><td>*Carry Costs (After Savings)</td><td class="right">${fmtUSD(t.carryDiscounted)}</td></tr>`;
   left += `<tr><th>HYDROBLOK TOTAL</th><th class="right">${fmtUSD(t.newTot)}</th></tr>`;
   left += `<tr><td>HydroBlok Cost per SF</td><td class="right">${fmtUSD(t.newTot/(t.sf>0?t.sf:1))}</td></tr>`;
   left += '</tbody></table>';
@@ -483,7 +496,7 @@ function buildPrintableHtml(){
   html += `<div class="pdf-col">${right}</div>`;
   html += '</div>';
 
-  html += '<p style="margin-top:8px;color:#64748b;font-size:10px">*Carry cost discounted based on project time savings</p>';
+  html += '<p style="margin-top:8px;color:#64748b;font-size:10px">*Carry cost Savings Calculated with average time saved using Hydroblok compared to traditional systems.</p>';
   html += '<p style="margin-top:12px;color:#64748b">Generated by Instant Quote Calculator</p>';
   html += '</div>';
   return html;
