@@ -29,8 +29,11 @@
   .item-pair{display:flex;gap:8px}
   .item-pair input{flex:1}
   .actions{display:flex;gap:8px;margin-top:12px}
-  .btn{padding:10px 12px;border-radius:8px;border:1px solid #e5e7eb;cursor:pointer}
+  .btn{padding:10px 12px;border-radius:8px;border:1px solid #e5e7eb;cursor:pointer;transition:background-color 150ms ease,filter 150ms ease,box-shadow 150ms ease}
   .btn.primary{background:#509E2E;color:#fff;border-color:#407E25}
+  .btn:hover{filter:brightness(0.92)}
+  .btn.primary:hover{background:#407E25;border-color:#356218}
+  .btn:focus{outline:none;box-shadow:0 0 0 3px rgba(80,158,46,0.15)}
   .muted{color:#64748b;font-size:0.9rem}
   .label-desc{font-size:0.8rem;color:#94a3b8;margin-left:6px}
   /* Branding & summary styles (match calculator) */
@@ -164,7 +167,24 @@
           </div>
 
           <div style="margin-top:8px">
-            <button class="btn" id="reset">Reset</button>
+            <div class="section-label">Customer Information</div>
+            <div class="item-pair" style="gap:8px">
+              <input id="first-name" placeholder="First name (required)" style="padding:8px 10px;border-radius:8px;border:1px solid #e5e7eb;flex:1" />
+              <input id="last-name" placeholder="Last name (required)" style="padding:8px 10px;border-radius:8px;border:1px solid #e5e7eb;flex:1" />
+            </div>
+            <div style="margin-top:8px">
+              <input id="lead-email" type="email" placeholder="Email (required)" style="padding:8px 10px;border-radius:8px;border:1px solid #e5e7eb;width:100%" />
+            </div>
+            <div style="margin-top:8px">
+              <input id="lead-phone" placeholder="Phone" style="padding:8px 10px;border-radius:8px;border:1px solid #e5e7eb;width:100%" />
+            </div>
+            <div style="margin-top:8px">
+              <input id="lead-company" placeholder="Company (required)" style="padding:8px 10px;border-radius:8px;border:1px solid #e5e7eb;width:100%" />
+            </div>
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+              <button id="submit-quote" class="btn primary">Submit</button>
+              <button class="btn" id="reset">Reset</button>
+            </div>
           </div>
 
           <div style="margin-top:12px">
@@ -271,8 +291,8 @@ const backerSelect = document.getElementById('backer-thickness');
 const modeQuickBtn = document.getElementById('mode-quick');
 const modeItemBtn = document.getElementById('mode-itemized');
 let quoteMode = 'quick';
-modeQuickBtn.addEventListener('click', ()=>{quoteMode='quick';modeQuickBtn.classList.add('active');modeItemBtn.classList.remove('active');document.getElementById('quick-section').style.display='';document.getElementById('itemized-section').style.display='none'; renderPreview();});
-modeItemBtn.addEventListener('click', ()=>{quoteMode='itemized';modeItemBtn.classList.add('active');modeQuickBtn.classList.remove('active');document.getElementById('quick-section').style.display='none';document.getElementById('itemized-section').style.display=''; renderPreview();});
+modeQuickBtn.addEventListener('click', ()=>{quoteMode='quick';modeQuickBtn.classList.add('active');modeItemBtn.classList.remove('active');document.getElementById('quick-section').style.display='';document.getElementById('itemized-section').style.display='none';});
+modeItemBtn.addEventListener('click', ()=>{quoteMode='itemized';modeItemBtn.classList.add('active');modeQuickBtn.classList.remove('active');document.getElementById('quick-section').style.display='none';document.getElementById('itemized-section').style.display='';});
 
 // Build type buttons
 const typeResBtn = document.getElementById('type-res');
@@ -281,8 +301,7 @@ let buildType = 'res';
 typeResBtn.addEventListener('click', ()=>{buildType='res';typeResBtn.classList.add('active');typeMultiBtn.classList.remove('active')});
 typeMultiBtn.addEventListener('click', ()=>{buildType='multi';typeMultiBtn.classList.add('active');typeResBtn.classList.remove('active')});
 // ensure preview updates when build type changes
-typeResBtn.addEventListener('click', ()=>{ renderPreview(); });
-typeMultiBtn.addEventListener('click', ()=>{ renderPreview(); });
+// preview updates are triggered only by the Submit button now
 
 function updateBacker(){
   const pricePerBoard = Number(backerSelect.value || 0);
@@ -293,7 +312,7 @@ function updateBacker(){
   RATES.new.lab_psf = HYDRO_ITEMS.reduce((s,it)=>s+(it.lab_psf||0),0);
   RATES.new.inst_psf = RATES.new.mat_psf + RATES.new.lab_psf;
 }
-backerSelect.addEventListener('change', updateBacker);
+backerSelect.addEventListener('change', ()=>{});
 updateBacker();
 
 function computeTotals(){
@@ -359,11 +378,33 @@ function renderPreview(){
   const deltaPsfEl = document.getElementById('delta-psf'); if (deltaPsfEl) deltaPsfEl.textContent = `${fmtUSD(t.sf>0? (t.delta / t.sf) : 0)}/SF`;
  }
 
-// Wire inputs for live preview
-Array.from(document.querySelectorAll('input, select')).forEach(el=>el.addEventListener('input', ()=>{ updateBacker(); renderPreview(); }));
+// Wire Submit button: validate required customer fields, then apply inputs and refresh calculations
+const submitBtn = document.getElementById('submit-quote');
+if (submitBtn) submitBtn.addEventListener('click', ()=>{
+  const first = (document.getElementById('first-name')||{}).value.trim();
+  const last = (document.getElementById('last-name')||{}).value.trim();
+  const email = (document.getElementById('lead-email')||{}).value.trim();
+  const company = (document.getElementById('lead-company')||{}).value.trim();
+  const missing = [];
+  if (!first) missing.push('First name');
+  if (!last) missing.push('Last name');
+  if (!email) missing.push('Email');
+  if (!company) missing.push('Company');
+  if (missing.length){ alert('Please complete required fields: ' + missing.join(', ')); return; }
+  // basic email format check
+  const emailEl = document.getElementById('lead-email');
+  const emailVal = emailEl?emailEl.value.trim():'';
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRe.test(emailVal)){
+    alert('Please enter a valid email address.');
+    if (emailEl) emailEl.focus();
+    return;
+  }
+  updateBacker(); renderPreview();
+});
 
-// Reset
-document.getElementById('reset').addEventListener('click', ()=>{ document.querySelectorAll('input').forEach(i=>i.value=''); document.getElementById('sf').value=0; document.getElementById('carry-cost').value=0; renderPreview(); });
+// Reset (clears inputs but does not recalc until Submit is clicked)
+document.getElementById('reset').addEventListener('click', ()=>{ document.querySelectorAll('input').forEach(i=>i.value=''); document.getElementById('sf').value=0; document.getElementById('carry-cost').value=0; const backer = document.getElementById('backer-thickness'); if (backer) backer.selectedIndex = 0; });
 
 // wire right-side PDF button
 const createPdfRightBtn = document.getElementById('create-pdf-right');
@@ -397,6 +438,13 @@ function buildPrintableHtml(){
   const dateStr = now.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
   const quoteNum = 'QB-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
 
+  // capture customer info from the form (if provided)
+  const custFirst = (document.getElementById('first-name')||{}).value || '';
+  const custLast = (document.getElementById('last-name')||{}).value || '';
+  const custEmail = (document.getElementById('lead-email')||{}).value || '';
+  const custPhone = (document.getElementById('lead-phone')||{}).value || '';
+  const custCompany = (document.getElementById('lead-company')||{}).value || '';
+
   let html = '';
   html += `<style>
     html,body{margin:0;padding:0}
@@ -422,6 +470,13 @@ function buildPrintableHtml(){
     : '<div class="brand">HydroBlok</div>';
   html += '<div class="pdf-header"><div>' + logoHtml + '</div><div style="text-align:right"><div class="muted">' + dateStr + '</div><div><span class="muted">Quote:</span>&nbsp;<strong>' + quoteNum + '</strong></div></div></div>';
   html += `<p class="muted" style="margin-top:6px">Quote susceptible to change based on individual project requirements</p>`;
+  // customer/contact info
+  html += `<div style="margin-top:8px;padding:8px 10px;border:1px solid #eef2f6;border-radius:8px">`;
+  html += `<div><strong>Customer:</strong> ${custFirst} ${custLast}</div>`;
+  html += `<div><strong>Company:</strong> ${custCompany}</div>`;
+  html += `<div><strong>Email:</strong> ${custEmail}</div>`;
+  if (custPhone && custPhone.length>0) html += `<div><strong>Phone:</strong> ${custPhone}</div>`;
+  html += `</div>`;
 
   let left = '';
   left += '<h3>Job Details</h3>';
@@ -531,10 +586,35 @@ createPdfBtn.addEventListener('click', async ()=>{
     if (!container.innerHTML || container.innerHTML.trim().length === 0) { alert('PDF content empty â€” aborting export.'); container.style.display='none'; return; }
 
     const now = new Date();
-    const quoteNum = 'QB-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+    // build a filename-safe name from customer first/last if present
+    const first = (document.getElementById('first-name')||{}).value.trim();
+    const last = (document.getElementById('last-name')||{}).value.trim();
+    function sanitizeForFilename(s){ return s.replace(/[^a-zA-Z0-9-_]/g,'_').replace(/_+/g,'_').substring(0,40) }
+    const namePart = (first || last) ? sanitizeForFilename((first + '_' + last).replace(/^_+|_+$/g,'')) : 'QB';
+    const quoteNum = namePart + '-' + now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
     const sf = Math.max(0, Number(sfEl.value || 0));
     const sfStr = Number.isInteger(sf) ? String(sf) : String(sf).replace('.', '_');
     const filename = 'HydroBlok-Quote-' + sfStr + 'SF-' + quoteNum + '.pdf';
+
+    // Prepare lead payload helper
+    async function sendLeadToZapier(payload){
+      try{
+        const WEBHOOK = 'https://hooks.zapier.com/hooks/catch/25738213/uahtlc5/';
+        // Send as form-encoded to avoid CORS preflight stripping the body in some browsers
+        const params = new URLSearchParams();
+        Object.keys(payload||{}).forEach(k=>{
+          const v = payload[k]===undefined||payload[k]===null? '': String(payload[k]);
+          params.append(k, v);
+        });
+        const resp = await fetch(WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: params.toString()
+        });
+        console.log('Zapier POST status:', resp.status);
+        try{ const txt = await resp.text(); console.log('Zapier response body:', txt); }catch(e){}
+      }catch(e){ console.warn('Zapier lead post failed', e); }
+    }
 
     // Render container to canvas and scale to a single PDF page (two-column printable layout)
     try {
@@ -561,6 +641,28 @@ createPdfBtn.addEventListener('click', async ()=>{
       const y = margin + ((availH - drawH) / 2);
       pdf.addImage(imgData, 'JPEG', x, y, drawW, drawH);
       pdf.save(filename);
+      // send lead data to Zapier (best-effort) — only required fields
+      try{
+        const first = (document.getElementById('first-name')||{}).value || '';
+        const last = (document.getElementById('last-name')||{}).value || '';
+        const email = (document.getElementById('lead-email')||{}).value || '';
+        const company = (document.getElementById('lead-company')||{}).value || '';
+        const phone = (document.getElementById('lead-phone')||{}).value || '';
+        const tSend = t;
+        const backerEl = document.getElementById('backer-thickness');
+        const board = backerEl && backerEl.selectedIndex>=0 ? backerEl.options[backerEl.selectedIndex].text : '';
+        const payload = {
+          first_name: first,
+          last_name: last,
+          email: email,
+          phone: phone,
+          company: company,
+          total_sq_ft: tSend.sf,
+          datetime: new Date().toISOString(),
+          board_thickness: board
+        };
+        await sendLeadToZapier(payload);
+      }catch(e){ console.warn('sendLead error', e); }
     } catch(errCanvas){
       console.error('canvas->PDF error', errCanvas);
       // fallback to html2pdf if canvas approach fails
@@ -573,6 +675,28 @@ createPdfBtn.addEventListener('click', async ()=>{
         pagebreak: { mode: ['css', 'legacy'] }
       };
       await html2pdf().set(opt).from(container).save();
+      // send lead data to Zapier (best-effort) after fallback save — only required fields
+      try{
+        const first = (document.getElementById('first-name')||{}).value || '';
+        const last = (document.getElementById('last-name')||{}).value || '';
+        const email = (document.getElementById('lead-email')||{}).value || '';
+        const company = (document.getElementById('lead-company')||{}).value || '';
+        const phone = (document.getElementById('lead-phone')||{}).value || '';
+        const tSend = t;
+        const backerEl = document.getElementById('backer-thickness');
+        const board = backerEl && backerEl.selectedIndex>=0 ? backerEl.options[backerEl.selectedIndex].text : '';
+        const payload = {
+          first_name: first,
+          last_name: last,
+          email: email,
+          phone: phone,
+          company: company,
+          total_sq_ft: tSend.sf,
+          datetime: new Date().toISOString(),
+          board_thickness: board
+        };
+        await sendLeadToZapier(payload);
+      }catch(e){ console.warn('sendLead error', e); }
     }
     // cleanup
     container.style.display = 'none';
