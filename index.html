@@ -15,11 +15,13 @@
   /* reuse calculator styles (compact) */
   body{font-family:"Aeonik Regular",Arial,Helvetica,sans-serif;margin:0;background:#fff;color:#0f172a}
   .shell{max-width:980px;margin:20px auto;padding:10px}
-  .box{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
-  .hero{padding:16px;border-bottom:1px solid #e5e7eb}
+  /* remove outer box styling for cleaner layout */
+  .box{border:0;padding:0;overflow:visible}
+  .hero{display:none}
   .hero h1{font-family:"Aeonik Medium";font-weight:500;text-transform:capitalize}
-  .grid{display:grid;grid-template-columns:1.05fr .95fr}
-  @media (max-width:880px){.grid{grid-template-columns:1fr}}
+  /* force single-column layout */
+  .grid{display:block}
+  @media (max-width:880px){.grid{display:block}}
   .pane{padding:14px}
   .label{font-family:"Aeonik Medium";font-weight:500;margin-bottom:6px;display:block;text-transform:capitalize}
   input[type="number"], select{padding:8px 10px;border-radius:8px;border:1px solid #e5e7eb;width:100%}
@@ -55,7 +57,7 @@
   td,th{padding:6px;border:1px solid #eaeef0}
   th{background:#f8fafc;text-align:left}
   .right{text-align:right}
-  .keypoints{display:grid;grid-template-columns:1fr 1fr;gap:6px;list-style:disc;padding-left:18px;margin-top:6px}
+  .keypoints{display:block;list-style:disc;padding-left:18px;margin-top:6px}
   .keypoints li{margin:4px 0;font-size:0.7rem;color:#94a3b8}
   /* remove number input arrows for cleaner numeric entry */
   input[type="number"]::-webkit-outer-spin-button,
@@ -73,13 +75,8 @@
 <body>
   <div class="shell">
     <div class="box">
-      <div class="hero">
-        <h1>See How Much You Could Save on Your Next Project</h1>
-        <p class="muted">Compare your current costs with HydroBlok ONE Backer CI and get an instant estimate.</p>
-      </div>
       <div class="grid">
         <div class="pane">
-          <p class="muted" style="margin-bottom:8px">Enter a few numbers below — we’ll calculate your savings and give you a downloadable quote you can share.</p>
           <label class="label">Quote Mode</label>
           <div class="seg" role="tablist">
             <button id="mode-quick" class="active">Quick Quote</button>
@@ -187,65 +184,55 @@
             </div>
           </div>
 
+          <!-- Inserted preview content (moved from right pane) -->
           <div style="margin-top:12px">
-            <div class="section-label">Key Points</div>
-            <ul class="keypoints">
-              <li>Better resale value over time</li>
-              <li>Builders Insurance Savings</li>
-              <li>Carry Insurance Savings</li>
-              <li>Shorter Curing Times Between Coats</li>
-              <li>No Lath Inspections</li>
-              <li>De-risk labor inflation costs</li>
-              <li>Reduced Trash Haul Away</li>
-            </ul>
+            <div class="section-label">Your Estimated Cost Comparison</div>
+            <p class="muted">Based on industry benchmarks and your inputs.</p>
+            <div class="section-label">Traditional Methods:</div>
+            <div class="price-row" style="display:flex;align-items:center;gap:12px;">
+              <span class="old-price" id="old-total">$0.00</span>
+              <span class="psf" id="old-psf">$0.00/SF</span>
+            </div>
+
+            <div class="section-label" style="margin-top:12px">HydroBlok:</div>
+            <div class="price-row" style="display:flex;align-items:center;gap:12px;">
+              <div class="new-price" id="new-total">$0.00</div>
+              <span class="badge" id="pct">0.0% savings</span>
+              <span class="psf" id="new-psf">$0.00/SF</span>
+            </div>
+
+            <div class="breakdown" style="margin-top:10px">
+              <div class="row2"><span>Traditional Materials</span><strong id="old-mat">$0.00</strong></div>
+              <div class="row2"><span>Traditional Labor</span><strong id="old-lab">$0.00</strong></div>
+              <div class="row2"><span>HydroBlok Materials</span><strong id="new-mat">$0.00</strong></div>
+              <div class="row2"><span>HydroBlok labor</span><strong id="new-lab">$0.00</strong></div>
+              <div class="row2"><span>Traditional Carrying Cost</span><strong id="trad-carry">$0.00</strong></div>
+              <div class="row2"><span>Carrying Cost Savings</span>
+                <div style="display:flex;flex-direction:column;align-items:flex-end">
+                  <strong id="carry-savings"></strong>
+                  <span class="psf" id="carry-savings-psf"></span>
+                </div>
+              </div>
+              <div class="row2" style="border-top:1px solid #e5e7eb;padding-top:8px">
+                <span>Savings vs traditional</span>
+                <div style="display:flex;flex-direction:column;align-items:flex-end">
+                  <strong id="delta">$0.00</strong>
+                  <span class="psf" id="delta-psf">$0.00/SF</span>
+                </div>
+              </div>
+              <div style="margin-top:12px;display:flex;gap:8px;flex-direction:column;align-items:flex-start">
+                <button class="btn primary" id="create-pdf-right">Download PDF Quote</button>
+                <p class="muted" style="margin-top:6px;font-size:0.9rem">*Carry cost savings calculated with average time saved using Hydroblok compared to traditional systems.</p>
+                <p class="muted" style="margin-top:8px">Quote susceptible to change based on individual project requirements</p>
+              </div>
+            </div>
           </div>
 
           <div class="actions">
             <button class="btn primary" id="create-pdf" style="display:none">Download PDF Detail</button>
           </div>
-        </div>
 
-        <div class="pane" id="preview">
-          <div class="section-label">Your Estimated Cost Comparison</div>
-          <p class="muted">Based on industry benchmarks and your inputs.</p>
-          <div class="section-label">Traditional Methods:</div>
-          <div class="price-row" style="display:flex;align-items:center;gap:12px;">
-            <span class="old-price" id="old-total">$0.00</span>
-            <span class="psf" id="old-psf">$0.00/SF</span>
-          </div>
-
-          <div class="section-label" style="margin-top:12px">HydroBlok:</div>
-          <div class="price-row" style="display:flex;align-items:center;gap:12px;">
-            <div class="new-price" id="new-total">$0.00</div>
-            <span class="badge" id="pct">0.0% savings</span>
-            <span class="psf" id="new-psf">$0.00/SF</span>
-          </div>
-
-          <div class="breakdown" style="margin-top:10px">
-            <div class="row2"><span>Traditional Materials</span><strong id="old-mat">$0.00</strong></div>
-            <div class="row2"><span>Traditional Labor</span><strong id="old-lab">$0.00</strong></div>
-            <div class="row2"><span>HydroBlok Materials</span><strong id="new-mat">$0.00</strong></div>
-            <div class="row2"><span>HydroBlok labor</span><strong id="new-lab">$0.00</strong></div>
-            <div class="row2"><span>Traditional Carrying Cost</span><strong id="trad-carry">$0.00</strong></div>
-            <div class="row2"><span>Carrying Cost Savings</span>
-              <div style="display:flex;flex-direction:column;align-items:flex-end">
-                <strong id="carry-savings"></strong>
-                <span class="psf" id="carry-savings-psf"></span>
-              </div>
-            </div>
-            <div class="row2" style="border-top:1px solid #e5e7eb;padding-top:8px">
-              <span>Savings vs traditional</span>
-              <div style="display:flex;flex-direction:column;align-items:flex-end">
-                <strong id="delta">$0.00</strong>
-                <span class="psf" id="delta-psf">$0.00/SF</span>
-              </div>
-            </div>
-            <div style="margin-top:12px;display:flex;gap:8px;flex-direction:column;align-items:flex-start">
-              <button class="btn primary" id="create-pdf-right">Download PDF Quote</button>
-              <p class="muted" style="margin-top:6px;font-size:0.9rem">*Carry cost savings calculated with average time saved using Hydroblok compared to traditional systems.</p>
-              <p class="muted" style="margin-top:8px">Quote susceptible to change based on individual project requirements</p>
-            </div>
-          </div>
+          <!-- Key Points removed per request -->
         </div>
       </div>
     </div>
@@ -599,8 +586,8 @@ createPdfBtn.addEventListener('click', async ()=>{
     // Prepare lead payload helper
     async function sendLeadToZapier(payload){
       try{
-        const WEBHOOK = 'https://hooks.zapier.com/hooks/catch/25738213/uahtlc5/';
-        // Send as form-encoded to avoid CORS preflight stripping the body in some browsers
+        const WEBHOOK = 'https://flow.zoho.com/883682724/flow/webhook/incoming?zapikey=1001.f200be3ea92b88191bbc642d1fba6ad9.a54826641a1bea9653349df1e834f1a5&isdebug=false';
+        // Send as form-encoded (application/x-www-form-urlencoded)
         const params = new URLSearchParams();
         Object.keys(payload||{}).forEach(k=>{
           const v = payload[k]===undefined||payload[k]===null? '': String(payload[k]);
@@ -611,9 +598,9 @@ createPdfBtn.addEventListener('click', async ()=>{
           headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
           body: params.toString()
         });
-        console.log('Zapier POST status:', resp.status);
-        try{ const txt = await resp.text(); console.log('Zapier response body:', txt); }catch(e){}
-      }catch(e){ console.warn('Zapier lead post failed', e); }
+        console.log('Zoho Flow POST status:', resp.status);
+        try{ const txt = await resp.text(); console.log('Zoho Flow response body:', txt); }catch(e){}
+      }catch(e){ console.warn('Zoho Flow lead post failed', e); }
     }
 
     // Render container to canvas and scale to a single PDF page (two-column printable layout)
