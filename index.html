@@ -305,7 +305,7 @@ updateBacker();
 function computeTotals(){
   let sf = Math.max(0, Number(sfEl.value || 0));
   let carry = Math.max(0, Number(carryEl.value || 0));
-  const carryPct = buildType === 'res' ? 0.18 : 0.15;
+  const carryPct = buildType === 'res' ? 0.30 : 0.10;
   let tradMat = 0, tradLab = 0;
   if (quoteMode === 'quick'){
     tradMat = Math.max(0, Number(tradMatEl.value || 0));
@@ -327,7 +327,7 @@ function computeTotals(){
     tradLab = items.reduce((s,it)=>{ if (!it.labId) return s; const el=document.getElementById(it.labId); let v=el?Number(el.value||0):0; return s + (isNaN(v)||v<0?0:v)},0);
   }
   const oldMatTot = tradMat * sf; const oldLabTot = tradLab * sf; const oldBase = (tradMat + tradLab) * sf; const oldTot = oldBase + carry;
-  const newMatTot = RATES.new.mat_psf * sf; const newLabTot = RATES.new.lab_psf * sf; const newBase = RATES.new.inst_psf * sf; const carryDiscounted = carry * (1 - (buildType === 'res' ? 0.18 : 0.15)); const newTot = newBase + carryDiscounted;
+  const newMatTot = RATES.new.mat_psf * sf; const newLabTot = RATES.new.lab_psf * sf; const newBase = RATES.new.inst_psf * sf; const carryDiscounted = carry * (1 - (buildType === 'res' ? 0.30 : 0.10)); const newTot = newBase + carryDiscounted;
   const delta = Math.max(0, oldTot - newTot); const pct = oldTot>0?((oldTot-newTot)/oldTot)*100:0;
   return { sf, carry, tradMat, tradLab, oldMatTot, oldLabTot, oldBase, oldTot, newMatTot, newLabTot, newBase, carryDiscounted, newTot, delta, pct };
 }
@@ -338,7 +338,7 @@ function renderPreview(){
   document.getElementById('old-lab').textContent = fmtUSD(t.oldLabTot);
   document.getElementById('new-mat').textContent = fmtUSD(t.newMatTot);
   document.getElementById('new-lab').textContent = fmtUSD(t.newLabTot);
-  const discPct = (buildType==='res'?18:15);
+  const discPct = (buildType==='res'?30:10);
   document.getElementById('new-total').textContent = fmtUSD(t.newTot);
   document.getElementById('new-psf').textContent = `${fmtUSD(t.newTot/(t.sf>0?t.sf:1))}/SF`;
   // traditional carry cost (user input)
